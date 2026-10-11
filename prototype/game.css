@@ -345,9 +345,9 @@
 .spin-controls{grid-template-columns:4.35fr 2.02fr;container-type:inline-size;gap:10px}
 .spin-mount,.turbo-mount{width:100%;height:54px}
 .spin-controls #spin,.spin-controls #turbo,.spin-controls #turbo[aria-pressed="true"]{width:100%;height:54px;min-height:54px;border:0;border-image:none;padding:0 10px;box-shadow:none;background-color:transparent;background-position:center;background-repeat:no-repeat;background-size:contain}
-.spin-controls #spin{background-image:url('../assets/runtime/button-spin-v3.svg')}
-.spin-controls #turbo,.spin-controls #turbo[aria-pressed="true"]{background-image:url('../assets/runtime/button-turbo-v3.svg')}
-.game header .help{border:0;border-image:none;background:transparent url('../assets/runtime/button-square-v3.svg') center/contain no-repeat;box-shadow:none}
+.spin-controls #spin{background-image:url('../assets/runtime/button-spin-v3-ui-delivery.webp')}
+.spin-controls #turbo,.spin-controls #turbo[aria-pressed="true"]{background-image:url('../assets/runtime/button-turbo-v3-ui-delivery.webp')}
+.game header .help{border:0;border-image:none;background:transparent url('../assets/runtime/button-square-v3-ui-delivery.webp') center/contain no-repeat;box-shadow:none}
 .ultra-letter-layer{display:none}
 @media(min-aspect-ratio:16/9){
  .entry .entry-composition{width:calc(100svh * 3);height:100svh;max-height:100svh;aspect-ratio:3 / 1;margin:0}
@@ -597,3 +597,8 @@ body:not(.opening-active) .game{height:var(--game-viewport-height,100svh);min-he
 .game .character-stage canvas.wolf-motion,
 .game .character-stage .wolf-motion-poster{height:min(82%,250px);width:auto;max-width:64%;left:0;object-fit:contain}
 .game .scene-backdrop{inset:auto 0 -60px;width:100%;height:auto;aspect-ratio:1040 / 1513;background-size:100% 100%;background-position:center}
+
+/* The longer retry label widens the same plank, centered, instead of overflowing it. */
+.entry .entry-composition #enter[data-state="retry"]{left:49.6%;width:max-content;min-width:15.2%;padding:0 1.4em;transform:translateX(-50%)}
+@media(min-aspect-ratio:16/9){.entry .entry-composition #enter[data-state="retry"]{left:49.4%;min-width:9.4%}}
+@media(max-width:760px) and (max-aspect-ratio:1/1){.entry .entry-composition #enter[data-state="retry"]{left:49.6%;min-width:clamp(190px,24cqw,260px);padding:0 16px}}

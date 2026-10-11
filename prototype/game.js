@@ -1,5 +1,5 @@
 import { createBookMotion } from './book-motion.js?v=20261011-light1';
-import { createWolfMotion } from './wolf-motion.js?v=20261011-restored1';
+import { createWolfMotion } from './wolf-motion.js?v=20261011-loading1';
 import { ART } from './symbols.js?v=20261011-light1';
 import { createGrid, evaluateGrid, collapseGrid } from './engine.js?v=20261011-light1';
 const $ = id => document.getElementById(id);
@@ -36,30 +36,42 @@ function prepareOpeningMorph(){
  openingMorph.src=`../assets/runtime/opening-seedance-head-${variant}-v2.mp4`;
  openingMorph.currentTime=resumeTime;
  openingMorph.playbackRate=1.5;
+ // Buffer the short morph while the player is still on the entry screen.
+ openingMorph.preload='auto';
  openingMorphPlayback=new Promise(resolve=>{
-  let done=false,timeout=null,remaining=20000,visibleSince=null;
+  let done=false,timeout=null,remaining=20000,visibleSince=null,started=false,startTimer=null,stallTimer=null;
+  const clearWatch=()=>{clearTimeout(startTimer);clearTimeout(stallTimer);startTimer=stallTimer=null;};
   const finish=()=>{
-   if(done)return;done=true;clearTimeout(timeout);
+   if(done)return;done=true;clearTimeout(timeout);clearWatch();
    document.removeEventListener('visibilitychange',syncMorphVisibility);
    openingMorph.removeEventListener('ended',finish);
    openingMorph.removeEventListener('error',fail);
+   openingMorph.removeEventListener('playing',onPlaying);
+   openingMorph.removeEventListener('waiting',onWaiting);
    if(cancelOpeningMorph===finish)cancelOpeningMorph=null;
    resolve();
   };
   const fail=()=>{if(done)return;openingMorph.hidden=true;openingMorph.pause();finish();};
+  // Slow devices skip the animation instead of holding the player: 3 s to start, 2 s per stall.
+  const skip=reason=>{if(done)return;entry.dataset.morphSkipped=reason;fail();};
+  const onPlaying=()=>{started=true;clearWatch();};
+  const onWaiting=()=>{if(!started||done||document.hidden||!introStarted)return;clearTimeout(stallTimer);stallTimer=setTimeout(()=>skip('stall'),2000);};
   const syncMorphVisibility=()=>{
    if(done)return;
-   clearTimeout(timeout);
+   clearTimeout(timeout);clearWatch();
    if(visibleSince!==null){remaining-=performance.now()-visibleSince;visibleSince=null;}
    if(document.hidden||!introStarted){openingMorph.pause();return;}
    if(remaining<=0){fail();return;}
    visibleSince=performance.now();timeout=setTimeout(fail,remaining);
+   if(!started)startTimer=setTimeout(()=>skip('start'),3000);
    openingMorph.play().then(()=>{entry.dataset.morphPlayback='playing';}).catch(error=>{entry.dataset.morphPlayback=error.name;if(!document.hidden&&!done)fail();});
   };
   document.addEventListener('visibilitychange',syncMorphVisibility);
   cancelOpeningMorph=finish;
   openingMorph.addEventListener('ended',finish,{once:true});
   openingMorph.addEventListener('error',fail,{once:true});
+  openingMorph.addEventListener('playing',onPlaying);
+  openingMorph.addEventListener('waiting',onWaiting);
   syncMorphVisibility();
   void introReady.then(syncMorphVisibility);
  });
@@ -222,8 +234,9 @@ async function play(){
  finally{busy=false;turboButton.disabled=false;spin.disabled=false;spin.textContent='RODAR';}
 }
 async function start(){
+ delete enter.dataset.state;
  turboButton.disabled=true;spin.disabled=true;spin.textContent='CARREGANDO…';busy=true;enter.disabled=true;entryStatus.textContent='Preparando os símbolos…';result.textContent='Preparando os símbolos…';
- const resources=[{label:'Corvo na moldura',src:'../assets/runtime/raven-perched-v1-delivery.webp'},{label:'Botão Rodar',src:'../assets/runtime/button-spin-v3.svg'},{label:'Botão Turbo',src:'../assets/runtime/button-turbo-v3.svg'},{label:'Botão de acesso',src:'../assets/runtime/button-square-v3.svg'},...ART,{label:'Moldura de madeira',src:'../assets/runtime/grid-wood-frame-v2-delivery.webp'},{label:'Botão de madeira',src:'../assets/runtime/button-wood-v2-delivery.webp'},{label:'Clareira e caçadores',src:'../assets/runtime/forest-stage-v6-canopy-delivery.webp'},{label:'Logo',src:'../assets/runtime/logo-moon-ivory-v5-delivery.webp'},{label:'Lobisomem',src:'../assets/runtime/wolf-idle-selected-v5-delivery.webp'},{label:'Floresta',src:'../assets/runtime/forest-v1-delivery.webp'}];
+ const resources=[{label:'Corvo na moldura',src:'../assets/runtime/raven-perched-v1-delivery.webp'},{label:'Botão Rodar',src:'../assets/runtime/button-spin-v3-ui-delivery.webp'},{label:'Botão Turbo',src:'../assets/runtime/button-turbo-v3-ui-delivery.webp'},{label:'Botão de acesso',src:'../assets/runtime/button-square-v3-ui-delivery.webp'},...ART,{label:'Moldura de madeira',src:'../assets/runtime/grid-wood-frame-v2-delivery.webp'},{label:'Botão de madeira',src:'../assets/runtime/button-wood-v2-delivery.webp'},{label:'Clareira e caçadores',src:'../assets/runtime/forest-stage-v6-canopy-delivery.webp'},{label:'Logo',src:'../assets/runtime/logo-moon-ivory-v5-delivery.webp'},{label:'Lobisomem',src:'../assets/runtime/wolf-idle-selected-v5-delivery.webp'},{label:'Floresta',src:'../assets/runtime/forest-v1-delivery.webp'}];
 
  const openingVariant=morphWide.matches?'ultrawide':'continuous';
  const openingVersion=morphWide.matches?'v4':'v3';
@@ -235,21 +248,33 @@ async function start(){
   $('asset-progress').value=percent;
  };
  updateProgress();
+ // Slow connections that keep advancing never fail; only 30 visible seconds without any finished art do.
+ const pending=new Set();let lastProgress=performance.now();
+ const watchdog=setInterval(()=>{
+  if(document.hidden){lastProgress=performance.now();return;}
+  if(performance.now()-lastProgress>30000)for(const finish of [...pending])finish(new Error('Carregamento sem progresso'));
+ },1000);
  const loaded=await Promise.allSettled(resources.map(item=>new Promise((resolve,reject)=>{
   const image=new Image();let settled=false;
   const finish=error=>{
-   if(settled)return;settled=true;clearTimeout(timeout);image.onload=null;image.onerror=null;
+   if(settled)return;settled=true;pending.delete(finish);image.onload=null;image.onerror=null;
    if(error){reject(error);return;}
-   ready++;updateProgress();resolve();
+   ready++;lastProgress=performance.now();updateProgress();resolve();
   };
-  const timeout=setTimeout(()=>finish(new Error(`Tempo de carregamento excedido: ${item.label}`)),30000);
+  pending.add(finish);
   image.onload=async()=>{
    try{await image.decode();finish();}catch(error){finish(error);}
   };
   image.onerror=()=>finish(new Error(item.label));image.src=item.src;
  })));
+ clearInterval(watchdog);
  const failed=loaded.filter(item=>item.status==='rejected');
- if(failed.length){result.textContent=`${failed.length} artes não carregaram. Tente novamente.`;spin.textContent='TENTAR NOVAMENTE';spin.disabled=false;spin.onclick=start;entryStatus.textContent=result.textContent;enter.textContent='TENTAR NOVAMENTE';enter.disabled=false;enter.onclick=start;return;}
+ if(failed.length){result.textContent=`${failed.length} artes não carregaram. Tente novamente.`;spin.textContent='TENTAR NOVAMENTE';spin.disabled=false;spin.onclick=start;entryStatus.textContent=result.textContent;enter.textContent='TENTAR NOVAMENTE';enter.dataset.state='retry';enter.disabled=false;enter.onclick=start;return;}
+ // After a successful retry the player still needs ENTRAR to start the presentation.
+ if(!introStarted&&!introBeginning){enter.textContent='ENTRAR';enter.disabled=false;enter.onclick=beginIntroduction;}
+ // Game music, ambience and the wolf video wait for the board art so slow connections open the game sooner.
+ if(!gameLoopBytes&&forestAudioContext){gameLoopBytes=fetchLoopTracks(false);decodeLoopTracks(gameLoopBytes);}
+ wolfMotion?.preload();
  // Prepare the initial board behind the opening without revealing its symbols.
  board.classList.add('awaiting-entry');
  draw(Array.from({length:16},(_,index)=>ART[index%ART.length].id));
@@ -297,6 +322,8 @@ async function scratchAfterMorph(){
 async function openGame(){
  if(entering||!introStarted)return;entering=true;enter.disabled=true;
  startForestAudio();
+ // The silent idle video may start without a gesture; it plays during ENTRANDO, before the board appears.
+ wolfMotion?.start(forestAudioContext);
  await openingScratch;
  enter.textContent='ENTRANDO';
  // Keep the status readable for three visible seconds, including reduced-motion mode.
@@ -338,7 +365,18 @@ function syncVisibility(){
 document.addEventListener('visibilitychange',syncVisibility);
 syncVisibility();
 openingScratch=scratchAfterMorph();
-void start();
+// The opening art downloads first, then the short morph, then game art behind the entry and its animation.
+function waitForMorphBuffer(){
+ if(openingMorph.hidden||!openingMorph.getAttribute('src')||openingMorph.readyState>=4)return Promise.resolve();
+ // Browsers that refuse to preload (suspend) or never buffer in time release the game art after 3 s.
+ return new Promise(resolve=>{
+  const events=['canplaythrough','suspend','error'];
+  const done=()=>{clearTimeout(timer);events.forEach(name=>openingMorph.removeEventListener(name,done));resolve();};
+  const timer=setTimeout(done,3000);
+  events.forEach(name=>openingMorph.addEventListener(name,done));
+ });
+}
+void openingVisuals.then(waitForMorphBuffer).then(()=>start());
 void openingVisuals.then(()=>{if(!introStarted&&!introBeginning){enter.textContent='ENTRAR';enter.disabled=false;enter.onclick=beginIntroduction;}});
 
 // Independent music and sound-effect preferences.
@@ -366,20 +404,29 @@ const forestTracks=[
  return {...config,media,gain:null};
 });
 let forestAudioStarted=false,forestAudioContext;
-const loopTrackBytes=Promise.allSettled(forestTracks.flatMap((track,index)=>track.buffered?[index]:[]).map(async index=>{
- const controller=new AbortController();
- const timeout=setTimeout(()=>controller.abort(),30000);
- try{
-  const response=await fetch(forestTracks[index].src,{signal:controller.signal});
-  if(!response.ok)throw new Error('Trilha indisponível');
-  return {index,bytes:await response.arrayBuffer()};
- }finally{clearTimeout(timeout);}
-})).then(results=>{
- const failures=results.filter(item=>item.status==='rejected');
- if(failures.length)entry.dataset.loopAssetFailures=String(failures.length);
- return results.filter(item=>item.status==='fulfilled').map(item=>item.value);
-});
-const introEffectBytes=Promise.allSettled([2,4,5,6,8,9,10].map(async index=>{
+function fetchLoopTracks(entrySoundtrack){
+ return Promise.allSettled(forestTracks.flatMap((track,index)=>track.buffered&&(track.mode==='turbo')===entrySoundtrack?[index]:[]).map(async index=>{
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),30000);
+  try{
+   const response=await fetch(forestTracks[index].src,{signal:controller.signal});
+   if(!response.ok)throw new Error('Trilha indisponível');
+   return {index,bytes:await response.arrayBuffer()};
+  }finally{clearTimeout(timeout);}
+ })).then(results=>{
+  const failures=results.filter(item=>item.status==='rejected');
+  if(failures.length)entry.dataset.loopAssetFailures=String((Number(entry.dataset.loopAssetFailures)||0)+failures.length);
+  return results.filter(item=>item.status==='fulfilled').map(item=>item.value);
+ });
+}
+// Only the entry soundtrack downloads with the opening; game music and ambience follow ENTRAR.
+const entryLoopBytes=openingVisuals.then(()=>fetchLoopTracks(true));
+let gameLoopBytes=null;
+function decodeLoopTracks(bytes){
+ void bytes.then(items=>Promise.all(items.map(async ({index,bytes})=>{forestTracks[index].buffer=await forestAudioContext.decodeAudioData(bytes);}))).then(()=>syncForestAudio()).catch(error=>console.warn('Trilhas:',error));
+}
+// Sound downloads after the opening art so ENTRAR appears sooner on slow connections.
+const introEffectBytes=openingVisuals.then(()=>Promise.allSettled([2,4,5,6,8,9,10].map(async index=>{
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),10000);
  try{
@@ -391,7 +438,7 @@ const introEffectBytes=Promise.allSettled([2,4,5,6,8,9,10].map(async index=>{
  const failures=results.filter(item=>item.status==='rejected');
  if(failures.length)entry.dataset.audioAssetFailures=String(failures.length);
  return results.filter(item=>item.status==='fulfilled').map(item=>item.value);
-});
+}));
 let introEffectsReady=Promise.resolve();
 let introBeginning=false;
 async function beginIntroduction(){
@@ -400,8 +447,6 @@ async function beginIntroduction(){
  enter.disabled=true;enter.textContent='CARREGANDO';
  entryStatus.textContent='Preparando áudio e apresentação…';
  startForestAudio();
- // Unlock the game video in this same gesture before the automatic handoff.
- wolfMotion?.start(forestAudioContext);
  try{
   if(forestAudioContext)await forestAudioContext.resume();
   await introEffectsReady;
@@ -552,7 +597,7 @@ function startForestAudio(){
    });
    introEffectsReady=introEffectBytes.then(items=>Promise.all(items.map(async ({index,bytes})=>{forestTracks[index].buffer=await forestAudioContext.decodeAudioData(bytes);}))).catch(error=>console.warn(error));
    // Loops start as soon as they are decoded and the context runs; the intro never waits for them.
-   void loopTrackBytes.then(items=>Promise.all(items.map(async ({index,bytes})=>{forestTracks[index].buffer=await forestAudioContext.decodeAudioData(bytes);}))).then(()=>syncForestAudio()).catch(error=>console.warn('Trilhas:',error));
+   decodeLoopTracks(entryLoopBytes);
    prepareCardLanding(forestAudioContext);
    for(const track of forestTracks){
     track.gain=forestAudioContext.createGain();track.gain.gain.value=0;

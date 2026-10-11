@@ -71,10 +71,12 @@ export function createWolfMotion(fallback, host) {
   get available(){return !failed;},
   start(audioContext){
    if(running||failed)return;running=true;context=audioContext;
-   if(context)for(const c of Object.values(clips)){c.gain=context.createGain();c.gain.gain.value=0;context.createMediaElementSource(c.video).connect(c.gain).connect(context.destination);c.video.muted=false;}
+   // Only the howl has audible sound; the idle loop stays muted so it can start without a user gesture.
+   if(context){const c=clips.howl;c.gain=context.createGain();c.gain.gain.value=0;context.createMediaElementSource(c.video).connect(c.gain).connect(context.destination);c.video.muted=false;}
    host.dataset.wolfMotion='idle'; // Howl is fetched only when Turbo is activated.
    void clips.idle.video.play().then(()=>{frame=requestAnimationFrame(draw);}).catch(fail);
   },
+  preload(){if(failed)return;const video=clips.idle.video;if(video.preload!=='auto'){video.preload='auto';video.load();}},
   sound(enabled){audioEnabled=enabled;if(!enabled)for(const name of Object.keys(clips))volume(name,0);},
   howl(){void change('howl');},idle(){void change('idle');},
  };
