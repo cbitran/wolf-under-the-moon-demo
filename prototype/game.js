@@ -266,6 +266,7 @@ async function openGame(){
  await openingScratch;
  await animate(entry,[{opacity:1},{opacity:0}],{duration:350,easing:'ease-out',fill:'forwards'});
  entry.hidden=true;openingMorph.pause();game.inert=false;
+ syncForestAudio(true);
  game.dataset.phase='entering';result.textContent='Os símbolos estão entrando no tabuleiro.';
  const step=board.children[4].offsetTop-board.children[0].offsetTop;
  board.classList.remove('awaiting-entry');board.classList.add('cascading');
@@ -382,7 +383,9 @@ function syncForestAudio(fadeMusic=false){
  for(const track of forestTracks){
   clearTimeout(track.pauseTimer);
   const enabled=forestAudioStarted&&audioPreferences[track.channel]&&!document.hidden;
-  const selected=track.channel!=='music'||track.mode===(turbo?'turbo':'normal');
+  const selected=track.channel==='music'
+   ?track.mode===(!entry.hidden||turbo?'turbo':'normal')
+   :!track.loop||entry.hidden;
   const audible=enabled&&selected;
   const fadingOut=crossfade&&enabled&&!selected&&track.gain&&!track.media.paused;
   if(!audible&&!fadingOut){track.media.pause();if(!track.loop)track.media.currentTime=0;}
@@ -429,6 +432,14 @@ for(const key of ['music','sfx'])$(key+'-toggle').onclick=()=>{
  refreshAudioPreferences();
 };
 refreshAudioPreferences();
+// Opening soundtrack runs alongside loading; playback policy may require a real gesture.
+function unlockOpeningAudio(event){
+ if(!event.isTrusted||entry.hidden)return;
+ startForestAudio();
+}
+document.addEventListener('pointerdown',unlockOpeningAudio,{passive:true});
+document.addEventListener('keydown',unlockOpeningAudio);
+startForestAudio();
 const gameMenu=$('game-menu');
 const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname)||location.protocol==='file:';
 const inviteURL=new URL(location.href);inviteURL.search='';inviteURL.hash='';
