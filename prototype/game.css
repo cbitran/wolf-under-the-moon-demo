@@ -506,3 +506,9 @@ body:not(.opening-active) .game{flex-shrink:0;width:min(100%,390px,max(280px,cal
 #game-menu .book-content{bottom:17%}
 #game-menu .book-navigation{color:#352419;font-weight:700;border-top-color:#71573788}
 #game-menu .book-navigation button{font:700 32px/1 Georgia,serif;color:#352419}
+
+/* The finished Enter button is already painted into the scene. Never draw a second button. */
+.entry .entry-composition #enter,
+.entry .entry-composition #enter:hover:not(:disabled){background:none;border:0;border-image:none;box-shadow:none;filter:none;color:transparent;text-shadow:none;transform:none}
+/* Only replace the baked lettering while loading; no frame or raised button skin. */
+.entry .entry-composition #enter:disabled{background:#302218 url('../assets/runtime/button-wood-v2.webp') center 48%/auto 650% no-repeat;color:#d7c9aa;text-shadow:0 1px 2px #000;filter:none;border:0;box-shadow:none;opacity:1}
