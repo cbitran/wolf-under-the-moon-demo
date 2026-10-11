@@ -54,7 +54,7 @@ export function createWolfMotion(fallback, host) {
   if(transition){clips[transition.from].video.pause();volume(transition.from,0);current=transition.to;transition=null;}
   if(name===current)return;
   const target=clips[name].video;target.currentTime=0;
-  try{await target.play();if(request!==token){if(name!==current&&name!==transition?.to)target.pause();return;}if(document.hidden)target.pause();transition={from:current,to:name,start:performance.now()};host.dataset.wolfMotion=`${current}-to-${name}`;}
+  try{await target.play();if(request!==token){if(name!==current&&name!==transition?.to)target.pause();return;}transition={from:current,to:name,start:performance.now()};host.dataset.wolfMotion=`${current}-to-${name}`;}
   catch(error){host.dataset.wolfMotionError=error.name;}
  }
  clips.howl.video.addEventListener('ended',()=>void change('idle'));

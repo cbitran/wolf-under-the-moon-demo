@@ -1,5 +1,5 @@
 import { createBookMotion } from './book-motion.js?v=20261011-light1';
-import { createWolfMotion } from './wolf-motion.js?v=20261011-background-pause1';
+import { createWolfMotion } from './wolf-motion.js?v=20261011-restored1';
 import { ART } from './symbols.js?v=20261011-light1';
 import { createGrid, evaluateGrid, collapseGrid } from './engine.js?v=20261011-light1';
 const $ = id => document.getElementById(id);
