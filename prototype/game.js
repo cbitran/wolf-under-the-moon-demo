@@ -18,6 +18,8 @@ function selectOpeningArt(){
 selectOpeningArt();
 morphWide.addEventListener('change',selectOpeningArt);
 
+let introStarted=false,releaseIntro;
+const introReady=new Promise(resolve=>{releaseIntro=resolve;});
 let openingMorphPlayback=Promise.resolve();
 let cancelOpeningMorph=null;
 function prepareOpeningMorph(){
@@ -49,7 +51,7 @@ function prepareOpeningMorph(){
    if(done)return;
    clearTimeout(timeout);
    if(visibleSince!==null){remaining-=performance.now()-visibleSince;visibleSince=null;}
-   if(document.hidden){openingMorph.pause();return;}
+   if(document.hidden||!introStarted){openingMorph.pause();return;}
    if(remaining<=0){fail();return;}
    visibleSince=performance.now();timeout=setTimeout(fail,remaining);
    openingMorph.play().catch(()=>{if(!document.hidden&&!done)fail();});
@@ -59,6 +61,7 @@ function prepareOpeningMorph(){
   openingMorph.addEventListener('ended',finish,{once:true});
   openingMorph.addEventListener('error',fail,{once:true});
   syncMorphVisibility();
+  void introReady.then(syncMorphVisibility);
  });
 }
 // Decode the actual art and human poster before displaying or starting the morph.
@@ -252,7 +255,7 @@ async function start(){
  draw(Array.from({length:16},(_,index)=>ART[index%ART.length].id));
  for(const cell of board.children)cell.firstElementChild.style.visibility='hidden';busy=true;turboButton.disabled=true;spin.disabled=true;spin.textContent='PREPARANDO…';spin.onclick=play;
  game.dataset.phase='ready';result.textContent='A floresta está pronta.';
- entryStatus.textContent='Carregamento concluído. Finalizando a animação…';
+ entryStatus.textContent=introStarted?'Carregamento concluído. Finalizando a animação…':'Toque em Entrar para iniciar a apresentação.';
  // Assets and animation run independently; both must finish before manual entry.
  await openingScratch;
  entryStatus.textContent='Tudo pronto. Toque em Entrar para começar.';
@@ -260,6 +263,7 @@ async function start(){
 }
 let openingScratch=null;
 async function scratchAfterMorph(){
+ await introReady;
  await openingVisuals;
  // Resizing while loading may replace the video; await the current playback.
  let playback;
@@ -334,6 +338,7 @@ document.addEventListener('visibilitychange',syncVisibility);
 syncVisibility();
 openingScratch=scratchAfterMorph();
 void start();
+void openingVisuals.then(()=>{if(!introStarted){enter.textContent='ENTRAR';enter.disabled=false;enter.onclick=beginIntroduction;}});
 
 // Independent music and sound-effect preferences.
 const audioPreferences={music:true,sfx:true};
@@ -354,6 +359,31 @@ const forestTracks=[
  {src:'../assets/runtime/opening-wolf-grunt-v1.mp3',level:.3,loop:false,channel:'sfx',introOnly:true}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
+const introEffectBytes=Promise.all([4,9].map(async index=>{
+ const response=await fetch(forestTracks[index].src);
+ if(!response.ok)throw new Error('Efeito da introdução indisponível');
+ return {index,bytes:await response.arrayBuffer()};
+})).catch(error=>{console.warn(error);return [];});
+let introEffectsReady=Promise.resolve();
+async function beginIntroduction(){
+ if(introStarted)return;
+ enter.disabled=true;enter.textContent='CARREGANDO';
+ startForestAudio();
+ try{
+  if(forestAudioContext)await forestAudioContext.resume();
+  await introEffectsReady;
+  introStarted=true;releaseIntro();
+ }catch(error){entry.dataset.audioError=error.name;enter.textContent='ENTRAR';enter.disabled=false;}
+}
+function playIntroBuffer(track,offset=0){
+ if(!track.buffer||forestAudioContext?.state!=='running')return false;
+ const voice=forestAudioContext.createBufferSource();voice.buffer=track.buffer;
+ voice.connect(track.gain);track.gain.gain.setValueAtTime(track.level,forestAudioContext.currentTime);
+ track.voice=voice;voice.onended=()=>{voice.disconnect();if(track.voice===voice)track.voice=null;};
+ voice.start(0,Math.min(offset,Math.max(0,track.buffer.duration-.01)));return true;
+}
+function pauseIntroGrunt(){if(openingGrunt.voice){openingGrunt.voice.stop();openingGrunt.voice=null;}openingGrunt.media.pause();}
+
 forestTracks[7].media.addEventListener('playing',()=>{entry.dataset.musicPlayback='playing';});
 let rewardMusicLevel=1,rewardMusicTimer;
 let cardLandingBuffer=null,cardLandingBus=null;
@@ -445,8 +475,9 @@ function syncOpeningGrunt(){
  if(elapsed<0||openingGruntFinished||reduced.matches)return;
  // Browsers requiring a gesture must not replay this cue after the morph is over.
  if(!forestAudioStarted||(forestAudioContext&&forestAudioContext.state!=='running'))return;
- if(openingGruntStarted&&!openingGrunt.media.paused)return;
+ if(openingGrunt.voice||(openingGruntStarted&&!openingGrunt.media.paused))return;
  openingGruntStarted=true;
+ if(playIntroBuffer(openingGrunt,Math.max(0,elapsed))){entry.dataset.gruntPlayback='playing';return;}
  openingGrunt.media.currentTime=Math.max(0,elapsed);
  if(openingGrunt.gain)openingGrunt.gain.gain.setValueAtTime(openingGrunt.level,forestAudioContext.currentTime);
  else openingGrunt.media.volume=openingGrunt.level;
@@ -454,7 +485,7 @@ function syncOpeningGrunt(){
 }
 openingMorph.addEventListener('timeupdate',syncOpeningGrunt);
 openingMorph.addEventListener('playing',syncOpeningGrunt);
-openingMorph.addEventListener('pause',()=>openingGrunt.media.pause());
+openingMorph.addEventListener('pause',pauseIntroGrunt);
 openingMorph.addEventListener('ended',()=>{openingGruntFinished=true;openingGrunt.media.pause();});
 
 const logoTear=forestTracks[4];
@@ -468,7 +499,7 @@ function playLogoTear(){
   if(forestAudioContext.state!=='running')return;
   logoTear.gain.gain.setValueAtTime(logoTear.level,forestAudioContext.currentTime);
  }else logoTear.media.volume=logoTear.level;
- // A blocked opening sound is skipped, never replayed late after Enter.
+ if(playIntroBuffer(logoTear)){entry.dataset.scratchPlayback='playing';return;}
  void logoTear.media.play().catch(()=>{});
 }
 
@@ -482,6 +513,7 @@ function startForestAudio(){
     entry.dataset.audioContext=forestAudioContext.state;
     if(forestAudioContext.state==='running'){syncForestAudio();syncOpeningGrunt();}
    });
+   introEffectsReady=introEffectBytes.then(items=>Promise.all(items.map(async ({index,bytes})=>{forestTracks[index].buffer=await forestAudioContext.decodeAudioData(bytes);}))).catch(error=>console.warn(error));
    prepareCardLanding(forestAudioContext);
    for(const track of forestTracks){
     track.gain=forestAudioContext.createGain();track.gain.gain.value=0;
@@ -558,7 +590,6 @@ function unlockOpeningAudio(event){
 }
 document.addEventListener('pointerup',unlockOpeningAudio,{passive:true});
 document.addEventListener('keydown',unlockOpeningAudio);
-startForestAudio();
 const gameMenu=$('game-menu');
 const bookMotion=createBookMotion(gameMenu);
 const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname)||location.protocol==='file:';

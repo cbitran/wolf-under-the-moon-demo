@@ -145,8 +145,8 @@
 .character-stage .wolf-reference{height:97%;width:74%;left:-1%;bottom:17%}
 
 /* Entry uses the same aged oak and forged iron as the in-game controls. */
-.entry #enter,.entry #enter:hover:not(:disabled){width:82%;min-height:82px;padding:12px 22px;border:0;border-radius:0;background:url('../assets/runtime/button-wood-v2.webp') center/100% auto no-repeat;box-shadow:none;color:#eee1bf;font:700 clamp(14px,4vw,20px) Georgia,serif;letter-spacing:1.4px;text-shadow:0 2px 3px #000}
-.entry #enter:hover:not(:disabled){filter:brightness(1.12)}
+.entry #enter{width:82%;min-height:82px;padding:12px 22px;border:0;border-radius:0;background:url('../assets/runtime/button-wood-v2.webp') center/100% auto no-repeat;box-shadow:none;color:#eee1bf;font:700 clamp(14px,4vw,20px) Georgia,serif;letter-spacing:1.4px;text-shadow:0 2px 3px #000}
+
 .entry #enter:disabled{opacity:.8}
 .loading-progress{position:relative;width:82%;padding:17px 19px 13px;border:8px solid transparent;border-image:url('../assets/runtime/grid-wood-frame-v2.webp') 21% / 8px / 0 round;background:linear-gradient(#111a1ae8,#0b1418ed),url('../assets/runtime/button-wood-v2.webp') center/cover;box-shadow:0 5px 12px #0009;color:#ddd1b5}
 .loading-progress label{font:12px Georgia,serif;text-shadow:0 1px 2px #000;align-items:center}
@@ -244,7 +244,7 @@
 
 /* Approved opening materials: split oak and nailed forged iron. */
 .board-frame,#game-menu,#rules,.loading-progress{border-image-repeat:stretch}
-#spin,#spin:hover:not(:disabled),.entry #enter,.entry #enter:hover:not(:disabled){background-size:100% 145%}
+#spin,#spin:hover:not(:disabled),.entry #enter{background-size:100% 145%}
 .grid-crest:before{background-size:100% 145%}
 .setting-toggle,.setting-toggle[aria-pressed="true"],.menu-rules{background-size:100% 145%}
 .spin-controls .turbo,.game header .help{background-color:#30271f;border-color:#554b3d;box-shadow:inset 0 0 0 2px #191511,0 4px 7px #0009}
@@ -260,7 +260,7 @@
 .entry-composition .loading-progress progress{position:absolute;left:10.7%;top:54%;width:78.6%;height:35%;margin:0;border:1px solid #777c73;border-radius:20px;overflow:hidden}
 .entry-composition .loading-progress progress::-webkit-progress-value{background:linear-gradient(#b8e0e4,#649aa8 45%,#284b59);box-shadow:inset 0 1px #e7f8ef}
 .entry-composition .loading-progress progress::-moz-progress-bar{background:linear-gradient(#b8e0e4,#649aa8 45%,#284b59)}
-.entry .entry-composition #enter,.entry .entry-composition #enter:hover:not(:disabled){position:absolute;left:23%;top:77%;width:54%;height:6%;min-height:44px;margin:0;padding:0 5%;background:#2d251e url('../assets/runtime/button-wood-v2.webp') center/auto 230% no-repeat;border:1px solid #5e5140;box-shadow:inset 0 0 7px #000b;color:#f0e4c9;font:700 clamp(13px,4.5cqw,22px) Georgia,serif;letter-spacing:.05em;opacity:1}
+.entry .entry-composition #enter{position:absolute;left:23%;top:77%;width:54%;height:6%;min-height:44px;margin:0;padding:0 5%;background:#2d251e url('../assets/runtime/button-wood-v2.webp') center/auto 230% no-repeat;border:1px solid #5e5140;box-shadow:inset 0 0 7px #000b;color:#f0e4c9;font:700 clamp(13px,4.5cqw,22px) Georgia,serif;letter-spacing:.05em;opacity:1}
 .entry-composition #entry-status{position:absolute;width:1px;height:1px;min-height:0;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(max-width:760px){.entry{background:#07111a}.entry .entry-composition{width:min(100vw,480px);margin:auto}}
 
@@ -318,10 +318,11 @@
 .entry-composition .loading-progress{inset:74.4% auto auto 39.2%;width:20.5%;height:5.5%}
 .entry-composition .loading-progress label{left:23%;width:54%;height:43%;padding:0 3%;font-size:clamp(8px,.85cqw,14px)}
 .entry-composition .loading-progress progress{left:1%;top:62%;width:98%;height:32%}
-.entry .entry-composition #enter,.entry .entry-composition #enter:hover:not(:disabled){left:42%;top:83.4%;width:15.2%;height:5.2%;min-height:0;padding:0;font-size:clamp(12px,1.65cqw,27px)}
+.entry .entry-composition #enter{left:42%;top:83.4%;width:15.2%;height:5.2%;min-height:0;padding:0;font-size:clamp(12px,1.65cqw,27px)}
 @media(max-width:760px){
  .entry .entry-composition{width:calc(100vw * 1672 / 820);height:calc(100vw * 941 / 820);aspect-ratio:1672 / 941;margin:0}
- .entry .entry-composition #enter{min-height:44px;top:82.7%}
+ .entry .entry-composition #enter{min-height:0;top:83.4%}
+ .entry .entry-composition #enter::after{content:"";position:absolute;left:0;right:0;top:50%;height:max(100%,44px);transform:translateY(-50%)}
 }
 
 /* Fit the complete opening vertically; never crop the entry controls. */
@@ -358,7 +359,7 @@
  .entry-composition .loading-progress{left:42.8%;top:76%;width:12.8%;height:6%}
  .entry-composition .loading-progress label{left:22%;width:56%;height:42%;font-size:clamp(8px,.62cqw,14px)}
  .entry-composition .loading-progress progress{top:64%;height:34%}
- .entry .entry-composition #enter,.entry .entry-composition #enter:hover:not(:disabled){left:44.7%;top:85.1%;width:9.4%;height:5.4%;min-height:0;font-size:clamp(12px,1.15cqw,26px)}
+ .entry .entry-composition #enter{left:44.7%;top:85.1%;width:9.4%;height:5.4%;min-height:0;font-size:clamp(12px,1.15cqw,26px)}
 }
 
 /* The perched reference is anchored to the upper right oak rail. */
@@ -507,11 +508,9 @@ body:not(.opening-active) .game{flex-shrink:0;width:min(100%,390px,max(280px,cal
 #game-menu .book-navigation{color:#352419;font-weight:700;border-top-color:#71573788}
 #game-menu .book-navigation button{font:700 32px/1 Georgia,serif;color:#352419}
 
-/* The finished Enter button is already painted into the scene. Never draw a second button. */
+/* One shared text surface in every state; the scene retains its original iron frame. */
 .entry .entry-composition #enter,
-.entry .entry-composition #enter:hover:not(:disabled){background:none;border:0;border-image:none;box-shadow:none;filter:none;color:transparent;text-shadow:none;transform:none}
-/* Only replace the baked lettering while loading; no frame or raised button skin. */
-.entry .entry-composition #enter:disabled{background:#302218 url('../assets/runtime/button-wood-v2.webp') center 48%/auto 650% no-repeat;color:#d7c9aa;text-shadow:0 1px 2px #000;filter:none;border:0;box-shadow:none;opacity:1}
+.entry .entry-composition #enter:disabled{background:#302218 url('../assets/runtime/button-wood-v2.webp') center 48%/auto 650% no-repeat;border:0;border-image:none;box-shadow:none;filter:none;color:#eee1bf;text-shadow:0 1px 2px #000;transform:none;opacity:1;font-weight:700;line-height:1}
 
 /* Faint field sketches remain behind the editable book contents. */
 #game-menu.book-menu::before{content:'';position:absolute;inset:13% 9% 20% 22%;background:url('../assets/runtime/book-hunter-sketches-v1.webp') center/100% 100% no-repeat;opacity:.32;mix-blend-mode:multiply;pointer-events:none}
