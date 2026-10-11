@@ -334,7 +334,7 @@ document.addEventListener('click',event=>{
  if(!control||control.matches(':disabled,[aria-disabled="true"]')||control.closest('[inert]'))return;
  // The effects switch acknowledges both on and off; subsequent actions obey the saved state.
  if(!audioPreferences.sfx&&control.id!=='sfx-toggle')return;
- queueMicrotask(playUiClick);
+ setTimeout(playUiClick,0);
 },true);
 const pageTurnSound=forestTracks[5];
 pageTurnSound.media.preload='auto';pageTurnSound.media.load();
