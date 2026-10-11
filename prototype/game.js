@@ -347,7 +347,8 @@ const forestTracks=[
  {src:'../assets/runtime/book-page-turn.mp3',level:.12,loop:false,channel:'sfx'},
  {src:'../assets/runtime/ui-click.mp3',level:.12,loop:false,channel:'sfx'},
  {src:'../assets/runtime/turbo-music-loop-v2.mp3',level:.14,loop:true,channel:'music',mode:'turbo'},
- {src:'../assets/runtime/collect-points.mp3',level:.32,loop:false,channel:'sfx'}
+ {src:'../assets/runtime/collect-points.mp3',level:.32,loop:false,channel:'sfx'},
+ {src:'../assets/runtime/opening-wolf-grunt-v1.mp3',level:.18,loop:false,channel:'sfx',introOnly:true}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
 let rewardMusicLevel=1,rewardMusicTimer;
@@ -413,6 +414,33 @@ function playBookPageTurn(){
  pageTurnSound.media.currentTime=0;
  void pageTurnSound.media.play().catch(()=>{});
 }
+// Small standalone growl follows the transformation, never a full character video.
+const openingGrunt=forestTracks[9];
+openingGrunt.media.preload='auto';openingGrunt.media.load();
+let openingGruntStarted=false,openingGruntFinished=false;
+function syncOpeningGrunt(){
+ const elapsed=(openingMorph.currentTime-2)/openingMorph.playbackRate;
+ if(entry.hidden||openingMorph.hidden||openingMorph.ended||elapsed>=1.45){
+  openingGrunt.media.pause();
+  if(elapsed>=1.45||entry.hidden)openingGruntFinished=true;
+  return;
+ }
+ if(document.hidden||openingMorph.paused){openingGrunt.media.pause();return;}
+ if(elapsed<0||openingGruntFinished||reduced.matches)return;
+ // Browsers requiring a gesture must not replay this cue after the morph is over.
+ if(!forestAudioStarted||forestAudioContext?.state!=='running')return;
+ if(openingGruntStarted&&!openingGrunt.media.paused)return;
+ openingGruntStarted=true;
+ openingGrunt.media.currentTime=Math.max(0,elapsed);
+ if(openingGrunt.gain)openingGrunt.gain.gain.setValueAtTime(openingGrunt.level,forestAudioContext.currentTime);
+ else openingGrunt.media.volume=openingGrunt.level;
+ void openingGrunt.media.play().catch(()=>{openingGruntFinished=true;});
+}
+openingMorph.addEventListener('timeupdate',syncOpeningGrunt);
+openingMorph.addEventListener('playing',syncOpeningGrunt);
+openingMorph.addEventListener('pause',()=>openingGrunt.media.pause());
+openingMorph.addEventListener('ended',()=>{openingGruntFinished=true;openingGrunt.media.pause();});
+
 const logoTear=forestTracks[4];
 logoTear.media.preload='auto';logoTear.media.load();
 let logoTearPlayed=false;
@@ -455,7 +483,7 @@ function syncForestAudio(fadeMusic=false){
   const enabled=forestAudioStarted&&audioChannelEnabled(track.channel)&&!document.hidden;
   const selected=track.channel==='music'
    ?track.mode===(!entry.hidden||turbo?'turbo':'normal')
-   :!track.loop||entry.hidden;
+   :track.introOnly?!entry.hidden:!track.loop||entry.hidden;
   const audible=enabled&&selected;
   const fadingOut=crossfade&&enabled&&!selected&&track.gain&&!track.media.paused;
   if(!audible&&!fadingOut){track.media.pause();if(!track.loop)track.media.currentTime=0;}
