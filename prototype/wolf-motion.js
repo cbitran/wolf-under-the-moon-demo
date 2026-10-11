@@ -23,7 +23,14 @@ export function createWolfMotion(fallback, host) {
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
   return [name,{video,texture,gain:null}];
  }));
- let running=false,current='idle',transition=null,token=0,frame=0,last=0,audioEnabled=false,context=null;
+ let failed=false,running=false,current='idle',transition=null,token=0,frame=0,last=0,audioEnabled=false,context=null;
+ function fail(error){
+  failed=true;running=false;token++;transition=null;cancelAnimationFrame(frame);
+  for(const c of Object.values(clips))c.video.pause();
+  canvas.hidden=true;fallback.style.visibility='';host.dataset.wolfMotion='fallback';
+  if(error)host.dataset.wolfMotionError=error.name||'MediaError';
+ }
+ for(const c of Object.values(clips))c.video.addEventListener('error',()=>fail(c.video.error));
  const volume=(name,value)=>{const c=clips[name];const level=value*(name==='howl'?.14:.22)*(audioEnabled&&!document.hidden?1:0);if(c.gain)c.gain.gain.setTargetAtTime(level,context.currentTime,.025);};
  function draw(time){
   if(!running||document.hidden)return;
@@ -59,13 +66,14 @@ export function createWolfMotion(fallback, host) {
  document.addEventListener('visibilitychange',visibility);
  window.addEventListener('pagehide',()=>{cancelAnimationFrame(frame);for(const c of Object.values(clips))c.video.pause();});
  window.addEventListener('pageshow',visibility);
- canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();running=false;cancelAnimationFrame(frame);for(const c of Object.values(clips))c.video.pause();canvas.hidden=true;fallback.style.visibility='';host.dataset.wolfMotion='fallback';});
+ canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();fail();});
  return {
+  get available(){return !failed;},
   start(audioContext){
-   if(running)return;running=true;context=audioContext;
+   if(running||failed)return;running=true;context=audioContext;
    if(context)for(const c of Object.values(clips)){c.gain=context.createGain();c.gain.gain.value=0;context.createMediaElementSource(c.video).connect(c.gain).connect(context.destination);c.video.muted=false;}
    host.dataset.wolfMotion='idle';clips.howl.video.preload='auto';clips.howl.video.load();
-   void clips.idle.video.play().then(()=>{frame=requestAnimationFrame(draw);}).catch(error=>{running=false;host.dataset.wolfMotionError=error.name;});
+   void clips.idle.video.play().then(()=>{frame=requestAnimationFrame(draw);}).catch(fail);
   },
   sound(enabled){audioEnabled=enabled;if(!enabled)for(const name of Object.keys(clips))volume(name,0);},
   howl(){void change('howl');},idle(){void change('idle');},

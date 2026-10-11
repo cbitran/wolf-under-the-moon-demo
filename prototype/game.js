@@ -1,5 +1,5 @@
 import { createBookMotion } from './book-motion.js?v=20261011-book-film1';
-import { createWolfMotion } from './wolf-motion.js?v=20261011-grunt-volume2';
+import { createWolfMotion } from './wolf-motion.js?v=20261011-fallback1';
 import { ART } from './symbols.js?v=20261011-entry16';
 import { createGrid, evaluateGrid, collapseGrid } from './engine.js?v=20261011-entry16';
 const $ = id => document.getElementById(id);
@@ -94,14 +94,14 @@ const wolfHowl='../assets/runtime/wolf-howl-selected-v7.webp';
 const wolfRage='../assets/runtime/wolf-rage-selected-v6.webp';
 let wolfReaction=0;
 function restoreWolfPose(){
- if(wolfMotion)return;
+ if(wolfMotion?.available)return;
  wolfReaction++;
  game.dataset.wolfState=turbo?'howl':'idle';
  wolf.src=turbo?wolfHowl:wolfNormal;
  wolf.alt=turbo?'Lobisomem agachado uivando para a lua eclipsada.':'Lobisomem agachado, com olhar feroz e a garra apoiada à frente.';
 }
 async function showRoundReaction(won){
- if(wolfMotion)return;
+ if(wolfMotion?.available)return;
  if(!won){restoreWolfPose();return;}
  const reaction=++wolfReaction;
  game.dataset.wolfState='rage';
@@ -119,7 +119,7 @@ turboButton.onclick=()=>{
  turboButton.setAttribute('aria-pressed',String(turbo));
  game.classList.toggle('turbo-active',turbo);
  restoreWolfPose();
- if(wolfMotion){if(turbo)wolfMotion.howl();else wolfMotion.idle();}
+ if(wolfMotion?.available){if(turbo)wolfMotion.howl();else wolfMotion.idle();}
  else if(turbo)playWolfHowl();
  else{forestTracks[2].media.pause();forestTracks[2].media.currentTime=0;}
  // Brief opacity easing softens the still-pose swap without stretching either axis.
