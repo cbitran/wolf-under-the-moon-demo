@@ -309,9 +309,17 @@ const forestTracks=[
  {src:'../assets/runtime/forest-searchers.mp3',level:.035,loop:true,channel:'sfx'},
  {src:'../assets/runtime/wolf-howl.mp3',level:.18,loop:false,channel:'sfx'},
  {src:'../assets/runtime/forest-music.mp3',level:.14,loop:true,channel:'music'},
- {src:'../assets/runtime/logo-claw-tear.mp3',level:.22,loop:false,channel:'sfx'}
+ {src:'../assets/runtime/logo-claw-tear.mp3',level:.22,loop:false,channel:'sfx'},
+ {src:'../assets/runtime/book-page-turn.mp3',level:.12,loop:false,channel:'sfx'}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
+const pageTurnSound=forestTracks[5];
+pageTurnSound.media.preload='auto';pageTurnSound.media.load();
+function playBookPageTurn(){
+ if(!forestAudioStarted||!audioPreferences.sfx||document.hidden)return;
+ pageTurnSound.media.currentTime=0;
+ void pageTurnSound.media.play().catch(()=>{});
+}
 const logoTear=forestTracks[4];
 logoTear.media.preload='auto';logoTear.media.load();
 let logoTearPlayed=false;
@@ -422,6 +430,7 @@ gameMenu.addEventListener('close',()=>{bookOpeningId++;gameMenu.classList.remove
 async function turnBook(next){
  if(bookTurning||next<0||next>=bookPages.length||next===bookPage)return;
  bookTurning=true;const direction=next>bookPage?1:-1;
+ playBookPageTurn();
  const leaf=$('book-leaves');
  try{
   await animate(leaf,[{transform:'perspective(700px) rotateY(0deg)',opacity:1},{transform:`perspective(700px) rotateY(${-direction*65}deg)`,opacity:0}],{duration:160,easing:'ease-in'});
