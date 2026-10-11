@@ -256,10 +256,10 @@ async function start(){
  for(const cell of board.children)cell.firstElementChild.style.visibility='hidden';busy=true;turboButton.disabled=true;spin.disabled=true;spin.textContent='PREPARANDO…';spin.onclick=play;
  game.dataset.phase='ready';result.textContent='A floresta está pronta.';
  entryStatus.textContent=introStarted?'Carregamento concluído. Finalizando a animação…':'Toque em Entrar para iniciar a apresentação.';
- // Assets and animation run independently; both must finish before manual entry.
+ // One Enter gesture starts the presentation; resources and all intro effects must finish.
  await openingScratch;
- entryStatus.textContent='Tudo pronto. Toque em Entrar para começar.';
- enter.textContent='ENTRAR';enter.onclick=openGame;enter.disabled=false;
+ entryStatus.textContent='Apresentação concluída. Entrando no jogo…';
+ await openGame();
 }
 let openingScratch=null;
 async function scratchAfterMorph(){
@@ -295,10 +295,8 @@ async function scratchAfterMorph(){
  ],{duration:340,delay:(i%3)*45,easing:'linear',fill:'forwards'}))));
 }
 async function openGame(){
- if(entering||enter.disabled)return;entering=true;enter.disabled=true;
+ if(entering||!introStarted)return;entering=true;enter.disabled=true;
  startForestAudio();
- // Start media inside the actual Enter gesture, before any awaited transition.
- wolfMotion?.start(forestAudioContext);
  enter.textContent='ENTRANDO';
  await openingScratch;
  await animate(entry,[{opacity:1},{opacity:0}],{duration:350,easing:'ease-out',fill:'forwards'});
@@ -373,6 +371,8 @@ async function beginIntroduction(){
  enter.disabled=true;enter.textContent='CARREGANDO';
  entryStatus.textContent='Preparando áudio e apresentação…';
  startForestAudio();
+ // Unlock the game video in this same gesture before the automatic handoff.
+ wolfMotion?.start(forestAudioContext);
  try{
   if(forestAudioContext)await forestAudioContext.resume();
   await introEffectsReady;
@@ -389,13 +389,7 @@ function playBufferedEffect(track,offset=0){
 }
 function pauseIntroGrunt(){if(openingGrunt.voice){openingGrunt.voice.stop();openingGrunt.voice=null;}openingGrunt.media.pause();}
 
-function beginWhenOpeningAudioPlays(){
- if(entry.hidden||introStarted||introBeginning||document.hidden)return;
- if(forestAudioContext&&forestAudioContext.state!=='running')return;
- if(forestTracks[7].media.paused||forestTracks[7].media.readyState<3)return;
- void beginIntroduction();
-}
-forestTracks[7].media.addEventListener('playing',()=>{entry.dataset.musicPlayback='playing';beginWhenOpeningAudioPlays();});
+forestTracks[7].media.addEventListener('playing',()=>{entry.dataset.musicPlayback='playing';});
 let rewardMusicLevel=1,rewardMusicTimer;
 let cardLandingBuffer=null,cardLandingBus=null;
 const cardLandingVoices=new Set();
@@ -525,7 +519,7 @@ function startForestAudio(){
    forestAudioContext=new Context();
    forestAudioContext.addEventListener('statechange',()=>{
     entry.dataset.audioContext=forestAudioContext.state;
-    if(forestAudioContext.state==='running'){syncForestAudio();syncOpeningGrunt();beginWhenOpeningAudioPlays();}
+    if(forestAudioContext.state==='running'){syncForestAudio();syncOpeningGrunt();}
    });
    introEffectsReady=introEffectBytes.then(items=>Promise.all(items.map(async ({index,bytes})=>{forestTracks[index].buffer=await forestAudioContext.decodeAudioData(bytes);}))).catch(error=>console.warn(error));
    prepareCardLanding(forestAudioContext);
