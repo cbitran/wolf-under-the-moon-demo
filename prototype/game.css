@@ -295,7 +295,7 @@
 .spin-controls #spin,.spin-controls #spin:hover:not(:disabled),.spin-controls #turbo,.spin-controls #turbo[aria-pressed="true"]{height:54px;min-height:54px;padding:0 12px;border:12px solid transparent;border-image:url('../assets/runtime/button-wood-v2.webp') 28% 12% fill / 12px 14px / 0 stretch;background:none;border-radius:0;box-shadow:none;opacity:1;display:flex;align-items:center;justify-content:center;gap:3px}
 .spin-controls #spin{font-size:14px;letter-spacing:.6px}
 .spin-controls #turbo{flex-direction:column;gap:0;font-size:10px;line-height:12px;letter-spacing:.6px}
-.spin-controls #turbo span{font-size:19px;line-height:14px}
+.spin-controls #turbo .turbo-icon{display:block;flex:none;width:16px;height:16px;fill:currentColor}
 .spin-controls #turbo:before,.spin-controls #turbo:after{content:none}
 .spin-controls #turbo[aria-pressed="true"]{filter:brightness(1.18);color:#ffd196;text-shadow:0 0 5px #9d351e,0 1px 2px #000}
 .spin-mount .iron-hanger,.turbo-mount .iron-hanger{top:-21px;height:38px;width:9px}
