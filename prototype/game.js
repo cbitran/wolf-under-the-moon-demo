@@ -308,7 +308,9 @@ void start();
 // Independent music and sound-effect preferences.
 const audioPreferences={music:true,sfx:true};
 try{const saved=JSON.parse(localStorage.getItem('wolf-audio-preferences')||'null');for(const key of ['music','sfx'])if(typeof saved?.[key]==='boolean')audioPreferences[key]=saved[key];}catch{}
-// Start inside the Enter gesture, so mobile browsers can unlock sound.
+// Intro audio is independent; saved preferences apply only after entering the game.
+function audioChannelEnabled(channel){return !entry.hidden||audioPreferences[channel];}
+// A real gesture unlocks sound when the browser requires it.
 const forestTracks=[
  {src:'../assets/runtime/forest-wind.mp3',level:.12,loop:true,channel:'sfx'},
  {src:'../assets/runtime/forest-searchers.mp3',level:.035,loop:true,channel:'sfx'},
@@ -347,7 +349,7 @@ document.addEventListener('click',event=>{
  const control=event.target.closest('button,a[href],[role="button"],input[type="checkbox"],input[type="radio"]');
  if(!control||control.matches(':disabled,[aria-disabled="true"]')||control.closest('[inert]'))return;
  // The effects switch acknowledges both on and off; subsequent actions obey the saved state.
- if(!audioPreferences.sfx&&control.id!=='sfx-toggle')return;
+ if(!audioChannelEnabled('sfx')&&control.id!=='sfx-toggle')return;
  setTimeout(playUiClick,0);
 },true);
 const pageTurnSound=forestTracks[5];
@@ -363,7 +365,7 @@ let logoTearPlayed=false;
 function playLogoTear(){
  if(logoTearPlayed)return;
  logoTearPlayed=true;
- if(!audioPreferences.sfx||document.hidden||reduced.matches)return;
+ if(!audioChannelEnabled('sfx')||document.hidden||reduced.matches)return;
  if(logoTear.gain){
   if(forestAudioContext.state!=='running')return;
   logoTear.gain.gain.setValueAtTime(logoTear.level,forestAudioContext.currentTime);
@@ -385,7 +387,7 @@ function startForestAudio(){
    }
   }
  }
- if(audioPreferences.sfx||audioPreferences.music)void forestAudioContext?.resume().catch(()=>{});
+ if(audioChannelEnabled('sfx')||audioChannelEnabled('music'))void forestAudioContext?.resume().catch(()=>{});
  syncForestAudio();
 }
 function syncForestAudio(fadeMusic=false){
@@ -393,7 +395,7 @@ function syncForestAudio(fadeMusic=false){
  const crossfade=fadeMusic===true;
  for(const track of forestTracks){
   clearTimeout(track.pauseTimer);
-  const enabled=forestAudioStarted&&audioPreferences[track.channel]&&!document.hidden;
+  const enabled=forestAudioStarted&&audioChannelEnabled(track.channel)&&!document.hidden;
   const selected=track.channel==='music'
    ?track.mode===(!entry.hidden||turbo?'turbo':'normal')
    :!track.loop||entry.hidden;
