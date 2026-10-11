@@ -120,6 +120,7 @@ function cellFor(id,index){
 function draw(grid){board.replaceChildren(...grid.map(cellFor));}
 let rewardTimer;
 function showReward(points){
+ playPointsSound();
  clearTimeout(rewardTimer);board.parentElement.querySelectorAll('.win-reward').forEach(node=>node.remove());
  const reward=document.createElement('div');
  reward.className='win-reward';reward.setAttribute('aria-hidden','true');
@@ -316,9 +317,17 @@ const forestTracks=[
  {src:'../assets/runtime/logo-claw-tear.mp3',level:.22,loop:false,channel:'sfx'},
  {src:'../assets/runtime/book-page-turn.mp3',level:.12,loop:false,channel:'sfx'},
  {src:'../assets/runtime/ui-click.mp3',level:.12,loop:false,channel:'sfx'},
- {src:'../assets/runtime/turbo-music-loop-v2.mp3',level:.14,loop:true,channel:'music',mode:'turbo'}
+ {src:'../assets/runtime/turbo-music-loop-v2.mp3',level:.14,loop:true,channel:'music',mode:'turbo'},
+ {src:'../assets/runtime/collect-points.mp3',level:.14,loop:false,channel:'sfx'}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
+const pointsSound=forestTracks[8];
+pointsSound.media.preload='auto';pointsSound.media.load();
+function playPointsSound(){
+ if(!forestAudioStarted||!audioPreferences.sfx||document.hidden)return;
+ pointsSound.media.currentTime=0;
+ void pointsSound.media.play().catch(()=>{});
+}
 const uiClickSound=forestTracks[6];
 uiClickSound.media.preload='auto';uiClickSound.media.load();
 function playUiClick(){
