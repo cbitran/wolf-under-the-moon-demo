@@ -311,11 +311,11 @@ const forestTracks=[
  {src:'../assets/runtime/forest-wind.mp3',level:.12,loop:true,channel:'sfx'},
  {src:'../assets/runtime/forest-searchers.mp3',level:.035,loop:true,channel:'sfx'},
  {src:'../assets/runtime/wolf-howl.mp3',level:.18,loop:false,channel:'sfx'},
- {src:'../assets/runtime/forest-music.mp3',level:.14,loop:true,channel:'music',mode:'normal'},
+ {src:'../assets/runtime/forest-music-loop-v2.mp3',level:.14,loop:true,channel:'music',mode:'normal'},
  {src:'../assets/runtime/logo-claw-tear.mp3',level:.22,loop:false,channel:'sfx'},
  {src:'../assets/runtime/book-page-turn.mp3',level:.12,loop:false,channel:'sfx'},
  {src:'../assets/runtime/ui-click.mp3',level:.12,loop:false,channel:'sfx'},
- {src:'../assets/runtime/turbo-music.mp3',level:.14,loop:true,channel:'music',mode:'turbo'}
+ {src:'../assets/runtime/turbo-music-loop-v2.mp3',level:.14,loop:true,channel:'music',mode:'turbo'}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
 const uiClickSound=forestTracks[6];
