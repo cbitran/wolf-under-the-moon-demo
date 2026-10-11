@@ -59,7 +59,7 @@
 #spin:hover:not(:disabled){border-color:#eddbab;background-color:#355767}
 
 /* Centered win amount floats above the symbols without intercepting input. */
-.win-reward{position:absolute;left:50%;top:50%;z-index:5;transform:translate(-50%,-50%);pointer-events:none;display:flex;align-items:center;flex-direction:column;justify-content:center;min-width:150px;padding:20px 26px;color:#fff0be;text-align:center;background:radial-gradient(ellipse,#07131cf0 12%,#07131ccc 42%,transparent 72%);text-shadow:0 3px 3px #000,0 0 16px #b99b5180}
+.win-reward{position:absolute;left:50%;top:50%;z-index:5;transform:translate(-50%,-50%);pointer-events:none;display:flex;align-items:center;flex-direction:column;justify-content:center;min-width:150px;padding:20px 26px;color:#fff0be;text-align:center;background:none;text-shadow:0 2px 5px #0009}
 .win-reward strong{font:700 clamp(42px,12vw,62px)/1 Georgia,serif;font-variant-numeric:tabular-nums;-webkit-text-stroke:.5px #d1b77e}
 .win-reward span{margin-top:8px;font-size:10px;letter-spacing:3px;color:#efdfb2}
 
