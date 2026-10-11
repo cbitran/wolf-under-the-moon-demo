@@ -1,3 +1,4 @@
+import { createBookMotion } from './book-motion.js?v=20261011-book-film1';
 import { createWolfMotion } from './wolf-motion.js?v=20261011-grunt-volume2';
 import { ART } from './symbols.js?v=20261011-entry16';
 import { createGrid, evaluateGrid, collapseGrid } from './engine.js?v=20261011-entry16';
@@ -559,6 +560,7 @@ document.addEventListener('pointerup',unlockOpeningAudio,{passive:true});
 document.addEventListener('keydown',unlockOpeningAudio);
 startForestAudio();
 const gameMenu=$('game-menu');
+const bookMotion=createBookMotion(gameMenu);
 const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname)||location.protocol==='file:';
 const inviteURL=new URL(location.href);inviteURL.search='';inviteURL.hash='';
 $('invite-link').value=localPreview?'':inviteURL.href;
@@ -599,17 +601,24 @@ async function openBook(page=0){
  if(gameMenu.open)return;
  const openingId=++bookOpeningId;
  bookPage=page;renderBookPage();gameMenu.classList.add('book-opening');
+ gameMenu.querySelector('.book-content').inert=true;
+ if(bookMotion&&!reduced.matches)gameMenu.classList.add('book-film');
  const cover=gameMenu.querySelector('.book-cover');
  openGameDialog(gameMenu);
  await animate(gameMenu,[{transform:'scale(.3)',opacity:0},{transform:'scale(1)',opacity:1}],{duration:420,easing:'cubic-bezier(.2,.75,.2,1)'});
  if(!gameMenu.open||openingId!==bookOpeningId)return;
- gameMenu.classList.add('book-unfolding');
- await animate(cover,[{transform:'perspective(900px) rotateY(0deg)',opacity:1},{transform:'perspective(900px) rotateY(-105deg)',opacity:0}],{duration:560,easing:'cubic-bezier(.3,.1,.2,1)'});
+ if(bookMotion&&!reduced.matches){
+  await bookMotion.play(playBookPageTurn);
+ }else{
+  gameMenu.classList.add('book-unfolding');
+  await animate(cover,[{transform:'perspective(900px) rotateY(0deg)',opacity:1},{transform:'perspective(900px) rotateY(-105deg)',opacity:0}],{duration:560,easing:'cubic-bezier(.3,.1,.2,1)'});
+ }
  if(openingId!==bookOpeningId)return;
  gameMenu.classList.remove('book-opening','book-unfolding');
+ gameMenu.querySelector('.book-content').inert=false;
  if(gameMenu.open)$('menu-title').focus({preventScroll:true});
 }
-gameMenu.addEventListener('close',()=>{bookOpeningId++;gameMenu.classList.remove('book-opening','book-unfolding');});
+gameMenu.addEventListener('close',()=>{bookOpeningId++;bookMotion?.stop();gameMenu.querySelector('.book-content').inert=false;gameMenu.classList.remove('book-opening','book-unfolding');});
 async function turnBook(next){
  if(bookTurning||next<0||next>=bookPages.length||next===bookPage)return;
  bookTurning=true;const direction=next>bookPage?1:-1;
@@ -634,6 +643,15 @@ function positionGameDialog(dialog){
  const viewport=window.visualViewport;
  const viewLeft=viewport?.offsetLeft||0,viewTop=viewport?.offsetTop||0;
  const viewWidth=viewport?.width||window.innerWidth,viewHeight=viewport?.height||window.innerHeight;
+ if(dialog===gameMenu&&viewWidth<=760){
+  // The book uses the phone's available area independently of the narrower game.
+  const width=Math.max(0,Math.min(480,viewWidth-16,(viewHeight-16)*.75));
+  const height=width*4/3;
+  dialog.style.left=`${viewLeft+(viewWidth-width)/2}px`;
+  dialog.style.top=`${viewTop+(viewHeight-height)/2}px`;
+  dialog.style.width=`${width}px`;dialog.style.height=`${height}px`;
+  dialog.style.maxHeight=`${height}px`;return;
+ }
  const left=Math.max(rect.left,viewLeft)+12;
  const right=Math.min(rect.right,viewLeft+viewWidth)-12;
  const top=Math.max(rect.top,viewTop)+12;

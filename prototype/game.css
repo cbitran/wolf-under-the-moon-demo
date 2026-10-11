@@ -520,3 +520,13 @@ body:not(.opening-active) .game{flex-shrink:0;width:min(100%,390px,max(280px,cal
 #game-menu #menu-rules[hidden],#game-menu .book-scroll-hint[hidden]{display:none!important}
 #game-menu [data-book-page="0"] h3{margin-bottom:6px}
 #game-menu [data-book-page="0"] .menu-setting{padding:2px 0}
+
+/* Keep the video's own final frame beneath the live book controls. */
+#game-menu.book-film{background-image:url('../assets/runtime/book-opening-final-v1.webp');overflow:visible}
+#game-menu.book-film.book-opening{background-image:url('../assets/runtime/book-opening-first-v1.webp')}
+#game-menu.book-film.book-film-playing{background-image:none}
+#game-menu.book-film::before,#game-menu.book-film .book-cover{display:none!important}
+#game-menu.book-film.book-opening .book-content{visibility:hidden}
+.book-motion{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.book-motion[hidden]{display:none!important}
+#game-menu.book-film .dialog-close{z-index:4}
