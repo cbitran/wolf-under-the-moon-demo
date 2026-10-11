@@ -348,19 +348,37 @@ const audioPreferences={music:true,sfx:true};
 function audioChannelEnabled(channel){return !entry.hidden||audioPreferences[channel];}
 // A real gesture unlocks sound when the browser requires it.
 const forestTracks=[
- {src:'../assets/runtime/forest-wind.mp3',level:.12,loop:true,channel:'sfx'},
- {src:'../assets/runtime/forest-searchers.mp3',level:.035,loop:true,channel:'sfx'},
+ {src:'../assets/runtime/forest-wind.mp3',level:.12,loop:true,buffered:true,channel:'sfx'},
+ {src:'../assets/runtime/forest-searchers.mp3',level:.035,loop:true,buffered:true,channel:'sfx'},
  {src:'../assets/runtime/wolf-howl.mp3',level:.18,loop:false,channel:'sfx'},
- {src:'../assets/runtime/forest-music-loop-v2.mp3',level:.14,loop:true,channel:'music',mode:'normal'},
+ {src:'../assets/runtime/forest-music-loop-v2.mp3',level:.14,loop:true,buffered:true,channel:'music',mode:'normal'},
  {src:'../assets/runtime/logo-claw-tear.mp3',level:.22,loop:false,channel:'sfx'},
  {src:'../assets/runtime/book-page-turn.mp3',level:.12,loop:false,channel:'sfx'},
  {src:'../assets/runtime/ui-click.mp3',level:.12,loop:false,channel:'sfx'},
- {src:'../assets/runtime/turbo-music-loop-v2.mp3',level:.14,loop:true,channel:'music',mode:'turbo'},
+ {src:'../assets/runtime/turbo-music-loop-v2.mp3',level:.14,loop:true,buffered:true,channel:'music',mode:'turbo'},
  {src:'../assets/runtime/collect-points.mp3',level:.32,loop:false,channel:'sfx'},
  {src:'../assets/runtime/opening-wolf-grunt-v1.mp3',level:.3,loop:false,channel:'sfx',introOnly:true},
  {src:'../assets/runtime/wolf-grunt-loop-v1.mp3',level:.12,loop:true,bufferLoop:true,channel:'sfx'}
-].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
+].map(config=>{
+ // Music and ambience loops play from decoded buffers: iOS WebKit stalled and paused them as media elements.
+ const media=config.buffered?null:new Audio(config.src);
+ if(media){media.loop=config.loop;media.preload='none';media.volume=0;}
+ return {...config,media,gain:null};
+});
 let forestAudioStarted=false,forestAudioContext;
+const loopTrackBytes=Promise.allSettled(forestTracks.flatMap((track,index)=>track.buffered?[index]:[]).map(async index=>{
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),30000);
+ try{
+  const response=await fetch(forestTracks[index].src,{signal:controller.signal});
+  if(!response.ok)throw new Error('Trilha indisponível');
+  return {index,bytes:await response.arrayBuffer()};
+ }finally{clearTimeout(timeout);}
+})).then(results=>{
+ const failures=results.filter(item=>item.status==='rejected');
+ if(failures.length)entry.dataset.loopAssetFailures=String(failures.length);
+ return results.filter(item=>item.status==='fulfilled').map(item=>item.value);
+});
 const introEffectBytes=Promise.allSettled([2,4,5,6,8,9,10].map(async index=>{
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),10000);
@@ -401,7 +419,6 @@ function playBufferedEffect(track,offset=0){
 }
 function pauseIntroGrunt(){if(openingGrunt.voice){openingGrunt.voice.stop();openingGrunt.voice=null;}openingGrunt.media.pause();}
 
-forestTracks[7].media.addEventListener('playing',()=>{entry.dataset.musicPlayback='playing';});
 let rewardMusicLevel=1,rewardMusicTimer;
 let cardLandingBuffer=null,cardLandingBus=null;
 const cardLandingVoices=new Set();
@@ -534,20 +551,51 @@ function startForestAudio(){
     if(forestAudioContext.state==='running'){syncForestAudio();syncOpeningGrunt();}
    });
    introEffectsReady=introEffectBytes.then(items=>Promise.all(items.map(async ({index,bytes})=>{forestTracks[index].buffer=await forestAudioContext.decodeAudioData(bytes);}))).catch(error=>console.warn(error));
+   // Loops start as soon as they are decoded and the context runs; the intro never waits for them.
+   void loopTrackBytes.then(items=>Promise.all(items.map(async ({index,bytes})=>{forestTracks[index].buffer=await forestAudioContext.decodeAudioData(bytes);}))).then(()=>syncForestAudio()).catch(error=>console.warn('Trilhas:',error));
    prepareCardLanding(forestAudioContext);
    for(const track of forestTracks){
     track.gain=forestAudioContext.createGain();track.gain.gain.value=0;
-    forestAudioContext.createMediaElementSource(track.media).connect(track.gain).connect(forestAudioContext.destination);
-    track.media.volume=1;
+    if(track.media){forestAudioContext.createMediaElementSource(track.media).connect(track.gain);track.media.volume=1;}
+    track.gain.connect(forestAudioContext.destination);
    }
   }
  }
  if(audioChannelEnabled('sfx')||audioChannelEnabled('music'))void forestAudioContext?.resume().catch(()=>{});
  syncForestAudio();
- // Unlock each ambient element during the gesture, including the game's normal track.
- if(navigator.userActivation?.isActive)for(const track of forestTracks.filter(t=>t.loop&&!t.bufferLoop)){
-  void track.media.play().then(()=>syncForestAudio()).catch(error=>{game.dataset.audioUnlockError=error.name;});
+}
+function stopLoopVoice(track,{keepPosition=false}={}){
+ clearTimeout(track.fadeTimer);track.fadeTimer=null;
+ const voice=track.voice;if(!voice)return;
+ const time=forestAudioContext.currentTime;
+ // Only a hidden tab resumes from the same point; every new activation restarts at zero.
+ if(keepPosition&&track.buffer)track.resumeAt=(time-track.startedAt)%track.buffer.duration;
+ track.voice=null;try{voice.stop();}catch(_){}voice.disconnect();
+ track.gain.gain.cancelScheduledValues(time);track.gain.gain.setValueAtTime(0,time);
+}
+function syncLoopVoice(track,audible,level,fade){
+ const time=forestAudioContext.currentTime,gain=track.gain.gain;
+ const hold=()=>{if(typeof gain.cancelAndHoldAtTime==='function')gain.cancelAndHoldAtTime(time);else{const current=gain.value;gain.cancelScheduledValues(time);gain.setValueAtTime(current,time);}};
+ if(audible){
+  // Selecting the track again during its fade-out keeps the same voice.
+  clearTimeout(track.fadeTimer);track.fadeTimer=null;
+  if(!track.voice){
+   if(!track.buffer||forestAudioContext.state!=='running')return;
+   const offset=track.resumeAt||0;track.resumeAt=0;
+   const voice=forestAudioContext.createBufferSource();voice.buffer=track.buffer;voice.loop=true;voice.connect(track.gain);
+   gain.cancelScheduledValues(time);gain.setValueAtTime(0,time);
+   voice.start(time,offset);track.voice=voice;track.startedAt=time-offset;
+   if(track.channel==='music')entry.dataset.musicPlayback='playing';
+  }
+  hold();
+  if(fade)gain.linearRampToValueAtTime(level,time+.8);else gain.setTargetAtTime(level,time,.3);
+  return;
  }
+ // A pending fade-out finishes on its own; ordinary syncs must not cut it short.
+ if(!track.voice||track.fadeTimer)return;
+ if(!fade){stopLoopVoice(track);return;}
+ hold();gain.linearRampToValueAtTime(0,time+.8);
+ track.fadeTimer=setTimeout(()=>stopLoopVoice(track),850);
 }
 function syncForestAudio(fadeMusic=false){
  // DOM event listeners also call this function; only an explicit true requests a crossfade.
@@ -561,8 +609,12 @@ function syncForestAudio(fadeMusic=false){
    ?track.mode===(!entry.hidden||turbo?'turbo':'normal')
    :track.introOnly?!entry.hidden:!track.loop||entry.hidden;
   const audible=enabled&&selected;
-  if(track.channel==='music'&&audible&&!track.wasAudible)track.media.currentTime=0;
-  track.wasAudible=audible;
+  if(track.buffered){
+   // Buffers only start on a running context, so nothing advances silently while autoplay is blocked.
+   if(!enabled||!forestAudioContext){stopLoopVoice(track,{keepPosition:document.hidden&&!track.fadeTimer});continue;}
+   syncLoopVoice(track,audible,track.level*(track.channel==='music'?rewardMusicLevel:1),crossfade&&track.channel==='music');
+   continue;
+  }
   if(track.bufferLoop){
    if(audible&&!track.voice)playBufferedEffect(track);
    if(!audible&&track.voice){track.voice.stop();track.voice=null;}
@@ -593,7 +645,7 @@ function playWolfHowl(){
  track.media.currentTime=0;void track.media.play().catch(()=>{});
 }
 document.addEventListener('visibilitychange',syncForestAudio);
-window.addEventListener('pagehide',()=>forestTracks.forEach(track=>track.media.pause()));
+window.addEventListener('pagehide',()=>forestTracks.forEach(track=>{if(track.buffered)stopLoopVoice(track,{keepPosition:!track.fadeTimer});else track.media.pause();}));
 window.addEventListener('pageshow',syncForestAudio);
 function refreshAudioPreferences(){
  for(const key of ['music','sfx']){
@@ -616,14 +668,15 @@ for(const key of ['music','sfx'])$(key+'-toggle').onclick=()=>{
 refreshAudioPreferences();
 // Opening soundtrack runs alongside loading; playback policy may require a real gesture.
 function unlockOpeningAudio(event){
- if(!event.isTrusted||(!entry.hidden&&!introBeginning))return;
- // Retry silently on ordinary interaction; never block the intro behind a prompt.
+ if(!event.isTrusted)return;
+ // The first touch or key anywhere, including the entry screen, unlocks the soundtrack; ENTRAR only starts the presentation.
  startForestAudio();
  if(!entry.hidden)syncOpeningGrunt();
 }
 document.addEventListener('pointerup',unlockOpeningAudio,{passive:true});
 document.addEventListener('keydown',unlockOpeningAudio);
-// The first Enter gesture owns the soundtrack start; no silent pre-roll.
+// Try to start on load; if the browser blocks autoplay, the first gesture above starts it from zero.
+startForestAudio();
 const gameMenu=$('game-menu');
 const bookMotion=createBookMotion(gameMenu);
 const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname)||location.protocol==='file:';
