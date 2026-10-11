@@ -78,6 +78,7 @@ async function showRoundReaction(won){
  const reaction=++wolfReaction;
  game.dataset.wolfState=won?'rage':'howl';
  wolf.src=won?wolfRage:wolfHowl;
+ if(!won)playWolfHowl();
  wolf.alt=won?'Lobisomem enfurecido com o ganho do jogador.':'Lobisomem em pose de uivo de triunfo após rodada sem ganho.';
  // Static poses provide the result mapping until approved motion clips exist.
  await animate(wolf,[{opacity:1},{opacity:1}],{duration:1800},{keepDuration:true});
@@ -258,6 +259,7 @@ async function scratchAfterMorph(){
 }
 async function openGame(){
  if(entering||enter.disabled)return;entering=true;enter.disabled=true;
+ startForestAudio();
  enter.textContent='ENTRANDO';
  await openingScratch;
  await animate(entry,[{opacity:1},{opacity:0}],{duration:350,easing:'ease-out',fill:'forwards'});
@@ -297,9 +299,55 @@ syncVisibility();
 openingScratch=scratchAfterMorph();
 void start();
 
-// Independent preferences for the future music and action-sound players.
+// Independent music and sound-effect preferences.
 const audioPreferences={music:true,sfx:true};
 try{const saved=JSON.parse(localStorage.getItem('wolf-audio-preferences')||'null');for(const key of ['music','sfx'])if(typeof saved?.[key]==='boolean')audioPreferences[key]=saved[key];}catch{}
+// Start inside the Enter gesture, so mobile browsers can unlock sound.
+const forestTracks=[
+ {src:'../assets/runtime/forest-wind.mp3',level:.12,loop:true},
+ {src:'../assets/runtime/forest-searchers.mp3',level:.035,loop:true},
+ {src:'../assets/runtime/wolf-howl.mp3',level:.18,loop:false}
+].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
+let forestAudioStarted=false,forestAudioContext;
+function startForestAudio(){
+ if(!forestAudioStarted){
+  forestAudioStarted=true;
+  const Context=window.AudioContext||window.webkitAudioContext;
+  if(Context){
+   forestAudioContext=new Context();
+   for(const track of forestTracks){
+    track.gain=forestAudioContext.createGain();track.gain.gain.value=0;
+    forestAudioContext.createMediaElementSource(track.media).connect(track.gain).connect(forestAudioContext.destination);
+    track.media.volume=1;
+   }
+  }
+ }
+ if(audioPreferences.sfx)void forestAudioContext?.resume().catch(()=>{});
+ syncForestAudio();
+}
+function syncForestAudio(){
+ const audible=forestAudioStarted&&audioPreferences.sfx&&!document.hidden;
+ for(const track of forestTracks){
+  if(!audible){track.media.pause();if(!track.loop)track.media.currentTime=0;}
+  const level=audible?track.level:0;
+  if(track.gain){
+   const time=forestAudioContext.currentTime;
+   track.gain.gain.cancelScheduledValues(time);
+   track.gain.gain.setTargetAtTime(level,time,.3);
+  }else track.media.volume=level;
+  if(audible&&track.loop)void track.media.play().catch(()=>{});
+ }
+}
+function playWolfHowl(){
+ if(!forestAudioStarted||!audioPreferences.sfx||document.hidden)return;
+ const track=forestTracks[2];
+ // Let an existing howl finish; turbo must never stack copies of the sound.
+ if(!track.media.paused)return;
+ track.media.currentTime=0;void track.media.play().catch(()=>{});
+}
+document.addEventListener('visibilitychange',syncForestAudio);
+window.addEventListener('pagehide',()=>forestTracks.forEach(track=>track.media.pause()));
+window.addEventListener('pageshow',syncForestAudio);
 function refreshAudioPreferences(){
  for(const key of ['music','sfx']){
   const button=$(key+'-toggle'),enabled=audioPreferences[key];
@@ -310,10 +358,12 @@ function refreshAudioPreferences(){
  $('help').setAttribute('aria-label',audioPreferences.music?'Desligar música':'Ligar música');
  $('help').classList.toggle('music-muted',!audioPreferences.music);
  game.dataset.music=String(audioPreferences.music);game.dataset.sfx=String(audioPreferences.sfx);
+ syncForestAudio();
  document.dispatchEvent(new CustomEvent('wolf:audio-preferences',{detail:{...audioPreferences}}));
 }
 for(const key of ['music','sfx'])$(key+'-toggle').onclick=()=>{
  audioPreferences[key]=!audioPreferences[key];
+ if(key==='sfx'&&audioPreferences.sfx)startForestAudio();
  try{localStorage.setItem('wolf-audio-preferences',JSON.stringify(audioPreferences));}catch{}
  refreshAudioPreferences();
 };
