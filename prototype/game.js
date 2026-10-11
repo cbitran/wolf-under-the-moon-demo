@@ -338,7 +338,7 @@ document.addEventListener('visibilitychange',syncVisibility);
 syncVisibility();
 openingScratch=scratchAfterMorph();
 void start();
-void openingVisuals.then(()=>{if(!introStarted){enter.textContent='ENTRAR';enter.disabled=false;enter.onclick=beginIntroduction;}});
+void openingVisuals.then(()=>{if(!introStarted&&!introBeginning){enter.textContent='ENTRAR';enter.disabled=false;enter.onclick=beginIntroduction;}});
 
 // Independent music and sound-effect preferences.
 const audioPreferences={music:true,sfx:true};
@@ -365,15 +365,17 @@ const introEffectBytes=Promise.all([4,9].map(async index=>{
  return {index,bytes:await response.arrayBuffer()};
 })).catch(error=>{console.warn(error);return [];});
 let introEffectsReady=Promise.resolve();
+let introBeginning=false;
 async function beginIntroduction(){
- if(introStarted)return;
+ if(introStarted||introBeginning)return;
+ introBeginning=true;
  enter.disabled=true;enter.textContent='CARREGANDO';
  startForestAudio();
  try{
   if(forestAudioContext)await forestAudioContext.resume();
   await introEffectsReady;
   introStarted=true;releaseIntro();
- }catch(error){entry.dataset.audioError=error.name;enter.textContent='ENTRAR';enter.disabled=false;}
+ }catch(error){introBeginning=false;entry.dataset.audioError=error.name;enter.textContent='ENTRAR';enter.disabled=false;}
 }
 function playIntroBuffer(track,offset=0){
  if(!track.buffer||forestAudioContext?.state!=='running')return false;
@@ -384,7 +386,13 @@ function playIntroBuffer(track,offset=0){
 }
 function pauseIntroGrunt(){if(openingGrunt.voice){openingGrunt.voice.stop();openingGrunt.voice=null;}openingGrunt.media.pause();}
 
-forestTracks[7].media.addEventListener('playing',()=>{entry.dataset.musicPlayback='playing';});
+function beginWhenOpeningAudioPlays(){
+ if(entry.hidden||introStarted||introBeginning||document.hidden)return;
+ if(forestAudioContext&&forestAudioContext.state!=='running')return;
+ if(forestTracks[7].media.paused||forestTracks[7].media.readyState<3)return;
+ void beginIntroduction();
+}
+forestTracks[7].media.addEventListener('playing',()=>{entry.dataset.musicPlayback='playing';beginWhenOpeningAudioPlays();});
 let rewardMusicLevel=1,rewardMusicTimer;
 let cardLandingBuffer=null,cardLandingBus=null;
 const cardLandingVoices=new Set();
@@ -511,7 +519,7 @@ function startForestAudio(){
    forestAudioContext=new Context();
    forestAudioContext.addEventListener('statechange',()=>{
     entry.dataset.audioContext=forestAudioContext.state;
-    if(forestAudioContext.state==='running'){syncForestAudio();syncOpeningGrunt();}
+    if(forestAudioContext.state==='running'){syncForestAudio();syncOpeningGrunt();beginWhenOpeningAudioPlays();}
    });
    introEffectsReady=introEffectBytes.then(items=>Promise.all(items.map(async ({index,bytes})=>{forestTracks[index].buffer=await forestAudioContext.decodeAudioData(bytes);}))).catch(error=>console.warn(error));
    prepareCardLanding(forestAudioContext);
@@ -590,6 +598,8 @@ function unlockOpeningAudio(event){
 }
 document.addEventListener('pointerup',unlockOpeningAudio,{passive:true});
 document.addEventListener('keydown',unlockOpeningAudio);
+// Try on every browser; retain the existing Enter fallback only if playback is blocked.
+startForestAudio();
 const gameMenu=$('game-menu');
 const bookMotion=createBookMotion(gameMenu);
 const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname)||location.protocol==='file:';
