@@ -169,7 +169,7 @@ async function play(){
    {transform:'translateY(-120%) rotate(-5deg)',opacity:0,offset:0},
    {transform:'translateY(-35%) rotate(-2deg)',opacity:1,offset:.55},
    {transform:'translateY(0) rotate(0)',opacity:1,offset:1}
-  ],{duration:(380+Math.random()*150)*speed,delay:((index%4)*65+Math.floor(index/4)*42+Math.random()*70)*speed,easing:'cubic-bezier(.25,.65,.3,1)',fill:'both'})));
+  ],{duration:(380+Math.random()*150)*speed,delay:((index%4)*65+Math.floor(index/4)*42+Math.random()*70)*speed,easing:'cubic-bezier(.25,.65,.3,1)',fill:'both'}).then(()=>playCardLanding(turbo?1.9:1.4))));
   round++;$('round').textContent=round;
   let roundPoints=0,chain=0;
   let outcome=evaluateGrid(grid);
@@ -198,7 +198,7 @@ async function play(){
       {transform:`translateY(${-distance*step}px)`,opacity:fresh?0:1},
       {transform:`translateY(${-distance*step*.72}px)`,opacity:1,offset:.28},
       {transform:'translateY(0)',opacity:1}
-     ],{duration:(310+distance*65+Math.random()*100)*speed,delay:((index%4)*33+Math.random()*90)*speed,easing:'cubic-bezier(.4,0,.65,1)',fill:'both'});
+     ],{duration:(310+distance*65+Math.random()*100)*speed,delay:((index%4)*33+Math.random()*90)*speed,easing:'cubic-bezier(.4,0,.65,1)',fill:'both'}).then(()=>playCardLanding(turbo?1.9:1.4));
     }));
    }finally{board.classList.remove('cascading');}
    outcome=evaluateGrid(grid);
@@ -305,6 +305,7 @@ async function openGame(){
      {transform:`translateY(${-distance*.78}px)`,opacity:1,offset:.2},
      {transform:'translateY(0)',opacity:1}
     ],{duration:125+row*15,easing:'cubic-bezier(.35,0,.55,1)',fill:'both'});
+    playCardLanding(1.6);
    }
   }
  }finally{
@@ -344,6 +345,28 @@ const forestTracks=[
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
 let rewardMusicLevel=1,rewardMusicTimer;
+let cardLandingBuffer=null,cardLandingBus=null;
+const cardLandingVoices=new Set();
+const cardLandingBytes=fetch('../assets/runtime/card-landing.mp3').then(response=>{
+ if(!response.ok)throw new Error('Efeito de queda indisponível');
+ return response.arrayBuffer();
+}).catch(error=>{console.warn(error);return null;});
+function prepareCardLanding(context){
+ cardLandingBus=context.createGain();cardLandingBus.gain.value=.065;
+ const limiter=context.createDynamicsCompressor();limiter.threshold.value=-15;limiter.knee.value=12;limiter.ratio.value=4;
+ cardLandingBus.connect(limiter).connect(context.destination);
+ void cardLandingBytes.then(bytes=>bytes?context.decodeAudioData(bytes):null).then(buffer=>{cardLandingBuffer=buffer;}).catch(error=>console.warn('Efeito de queda:',error));
+}
+function stopCardLandings(){
+ for(const voice of cardLandingVoices)voice.stop();
+ cardLandingVoices.clear();
+}
+function playCardLanding(rate=1.4){
+ if(!audioPreferences.sfx||document.hidden||!cardLandingBuffer||forestAudioContext?.state!=='running')return;
+ const voice=forestAudioContext.createBufferSource();voice.buffer=cardLandingBuffer;
+ voice.playbackRate.value=rate;voice.connect(cardLandingBus);cardLandingVoices.add(voice);
+ voice.onended=()=>{voice.disconnect();cardLandingVoices.delete(voice);};voice.start();
+}
 const pointsSound=forestTracks[8];
 pointsSound.media.preload='auto';pointsSound.media.load();
 function playPointsSound(){
@@ -405,6 +428,7 @@ function startForestAudio(){
   const Context=window.AudioContext||window.webkitAudioContext;
   if(Context){
    forestAudioContext=new Context();
+   prepareCardLanding(forestAudioContext);
    for(const track of forestTracks){
     track.gain=forestAudioContext.createGain();track.gain.gain.value=0;
     forestAudioContext.createMediaElementSource(track.media).connect(track.gain).connect(forestAudioContext.destination);
@@ -418,6 +442,7 @@ function startForestAudio(){
 function syncForestAudio(fadeMusic=false){
  // DOM event listeners also call this function; only an explicit true requests a crossfade.
  const crossfade=fadeMusic===true;
+ if(!audioPreferences.sfx||document.hidden)stopCardLandings();
  for(const track of forestTracks){
   clearTimeout(track.pauseTimer);
   const enabled=forestAudioStarted&&audioChannelEnabled(track.channel)&&!document.hidden;
