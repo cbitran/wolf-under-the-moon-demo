@@ -590,3 +590,10 @@ body:not(.opening-active) .game{height:var(--game-viewport-height,100svh);min-he
   background:none;box-shadow:none;font-size:18px;line-height:1;letter-spacing:.6px;
  }
 }
+
+/* Keep the cast visible: fixed source registration, bounded foreground wolf. */
+.game header{justify-content:flex-start;gap:8px}
+.game .character-stage .wolf-reference,
+.game .character-stage canvas.wolf-motion,
+.game .character-stage .wolf-motion-poster{height:min(82%,250px);width:auto;max-width:64%;left:0;object-fit:contain}
+.game .scene-backdrop{inset:auto 0 -60px;width:100%;height:auto;aspect-ratio:1040 / 1513;background-size:100% 100%;background-position:center}
