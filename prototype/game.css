@@ -493,3 +493,11 @@ body.opening-active{overflow:hidden}
 /* The motion canvas retains the same ground anchor; its source ratio stays intact. */
 .character-stage canvas.wolf-motion,.character-stage .wolf-motion-poster{width:auto;aspect-ratio:448 / 498;left:5%;object-fit:contain;pointer-events:none}
 .wolf-motion[hidden]{display:none!important}
+
+/* Fit the complete game to available height without distorting its artwork.
+   Very short screens keep usable controls and can scroll the document. */
+body:not(.opening-active){height:auto;min-height:100dvh;overflow-x:clip;overflow-y:auto;align-items:flex-start}
+body:not(.opening-active) .game{flex-shrink:0;width:min(100%,390px,max(280px,calc((100dvh - 250px) / 1.65)));height:auto;max-height:none;min-height:0;margin:0 auto}
+@media(max-width:760px){
+ body:not(.opening-active) .game{width:min(100%,480px,max(280px,calc((100dvh - 210px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 1.65)));min-height:100dvh}
+}
