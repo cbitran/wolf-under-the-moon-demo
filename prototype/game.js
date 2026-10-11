@@ -544,7 +544,7 @@ const inviteURL=new URL(location.href);inviteURL.search='';inviteURL.hash='';
 $('invite-link').value=localPreview?'':inviteURL.href;
 $('invite-link').placeholder=localPreview?'Disponível após publicar o jogo':'';
 $('invite-copy').disabled=localPreview;
-$('invite-status').textContent=localPreview?'Esta versão está no localhost. O convite ficará disponível com o link publicado.':'';
+$('invite-status').textContent='';
 $('menu-open').onclick=()=>openBook(0);
 $('menu-close').onclick=()=>gameMenu.close();
 $('menu-rules').onclick=()=>turnBook(1);
