@@ -310,9 +310,32 @@ const forestTracks=[
  {src:'../assets/runtime/wolf-howl.mp3',level:.18,loop:false,channel:'sfx'},
  {src:'../assets/runtime/forest-music.mp3',level:.14,loop:true,channel:'music'},
  {src:'../assets/runtime/logo-claw-tear.mp3',level:.22,loop:false,channel:'sfx'},
- {src:'../assets/runtime/book-page-turn.mp3',level:.12,loop:false,channel:'sfx'}
+ {src:'../assets/runtime/book-page-turn.mp3',level:.12,loop:false,channel:'sfx'},
+ {src:'../assets/runtime/ui-click.mp3',level:.12,loop:false,channel:'sfx'}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
+const uiClickSound=forestTracks[6];
+uiClickSound.media.preload='auto';uiClickSound.media.load();
+function playUiClick(){
+ if(document.hidden)return;
+ if(!forestAudioStarted)startForestAudio();
+ if(uiClickSound.gain){
+  const time=forestAudioContext.currentTime;
+  uiClickSound.gain.gain.cancelScheduledValues(time);
+  uiClickSound.gain.gain.setValueAtTime(uiClickSound.level,time);
+ }else uiClickSound.media.volume=uiClickSound.level;
+ uiClickSound.media.currentTime=0;
+ void uiClickSound.media.play().catch(()=>{});
+}
+document.addEventListener('click',event=>{
+ // One sound per real activation, including keyboard; delegated .click() calls are silent.
+ if(!event.isTrusted||!(event.target instanceof Element))return;
+ const control=event.target.closest('button,a[href],[role="button"],input[type="checkbox"],input[type="radio"]');
+ if(!control||control.matches(':disabled,[aria-disabled="true"]')||control.closest('[inert]'))return;
+ // The effects switch acknowledges both on and off; subsequent actions obey the saved state.
+ if(!audioPreferences.sfx&&control.id!=='sfx-toggle')return;
+ queueMicrotask(playUiClick);
+},true);
 const pageTurnSound=forestTracks[5];
 pageTurnSound.media.preload='auto';pageTurnSound.media.load();
 function playBookPageTurn(){
