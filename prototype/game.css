@@ -489,3 +489,7 @@ body.opening-active{overflow:hidden}
 }
 
 .opening-fog{opacity:.45}
+
+/* The motion canvas retains the same ground anchor; its source ratio stays intact. */
+.character-stage canvas.wolf-motion,.character-stage .wolf-motion-poster{width:auto;aspect-ratio:448 / 498;left:5%;object-fit:contain;pointer-events:none}
+.wolf-motion[hidden]{display:none!important}

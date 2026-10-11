@@ -1,3 +1,4 @@
+import { createWolfMotion } from './wolf-motion.js?v=20261011-wolf-motion1';
 import { ART } from './symbols.js?v=20261011-entry16';
 import { createGrid, evaluateGrid, collapseGrid } from './engine.js?v=20261011-entry16';
 const $ = id => document.getElementById(id);
@@ -83,17 +84,20 @@ morphWide.addEventListener('change',prepareOpeningMorph);
 
 let turbo=false;
 const turboButton=$('turbo'),wolf=document.querySelector('.wolf-reference');
+const wolfMotion=createWolfMotion(wolf,game);
 const wolfNormal=wolf.getAttribute('src');
 const wolfHowl='../assets/runtime/wolf-howl-selected-v7.webp';
 const wolfRage='../assets/runtime/wolf-rage-selected-v6.webp';
 let wolfReaction=0;
 function restoreWolfPose(){
+ if(wolfMotion)return;
  wolfReaction++;
  game.dataset.wolfState=turbo?'howl':'idle';
  wolf.src=turbo?wolfHowl:wolfNormal;
  wolf.alt=turbo?'Lobisomem agachado uivando para a lua eclipsada.':'Lobisomem agachado, com olhar feroz e a garra apoiada à frente.';
 }
 async function showRoundReaction(won){
+ if(wolfMotion)return;
  if(!won){restoreWolfPose();return;}
  const reaction=++wolfReaction;
  game.dataset.wolfState='rage';
@@ -111,7 +115,8 @@ turboButton.onclick=()=>{
  turboButton.setAttribute('aria-pressed',String(turbo));
  game.classList.toggle('turbo-active',turbo);
  restoreWolfPose();
- if(turbo)playWolfHowl();
+ if(wolfMotion){if(turbo)wolfMotion.howl();else wolfMotion.idle();}
+ else if(turbo)playWolfHowl();
  else{forestTracks[2].media.pause();forestTracks[2].media.currentTime=0;}
  // Brief opacity easing softens the still-pose swap without stretching either axis.
  for(const motion of wolf.getAnimations())motion.cancel();
@@ -289,6 +294,7 @@ async function openGame(){
  await openingScratch;
  await animate(entry,[{opacity:1},{opacity:0}],{duration:350,easing:'ease-out',fill:'forwards'});
  entry.hidden=true;openingMorph.pause();game.hidden=false;game.inert=false;document.body.classList.remove('opening-active');
+ wolfMotion?.start(forestAudioContext);
  syncForestAudio(true);
  game.dataset.phase='entering';result.textContent='Os símbolos estão entrando no tabuleiro.';
  const step=board.children[4].offsetTop-board.children[0].offsetTop;
@@ -442,6 +448,7 @@ function startForestAudio(){
 function syncForestAudio(fadeMusic=false){
  // DOM event listeners also call this function; only an explicit true requests a crossfade.
  const crossfade=fadeMusic===true;
+ wolfMotion?.sound(entry.hidden&&audioPreferences.sfx&&!document.hidden);
  if(!audioPreferences.sfx||document.hidden)stopCardLandings();
  for(const track of forestTracks){
   clearTimeout(track.pauseTimer);
