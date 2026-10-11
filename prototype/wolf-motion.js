@@ -5,7 +5,7 @@ export function createWolfMotion(fallback, host) {
  const gl=canvas.getContext('webgl',{alpha:true,premultipliedAlpha:false,antialias:false});
  if(!gl||matchMedia('(prefers-reduced-motion: reduce)').matches||navigator.connection?.saveData)return null;
  fallback.after(canvas);
- fallback.src='../assets/runtime/wolf-idle-motion-poster-v1.webp';fallback.classList.add('wolf-motion-poster');
+ fallback.src='../assets/runtime/wolf-idle-motion-poster-v1-delivery.webp';fallback.classList.add('wolf-motion-poster');
  const shader=(type,source)=>{const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;};
  const program=gl.createProgram();
  gl.attachShader(program,shader(gl.VERTEX_SHADER,'attribute vec2 p;varying vec2 uv;void main(){uv=vec2((p.x+1.)*.5,(1.-p.y)*.5);gl_Position=vec4(p,0.,1.);}'));
@@ -41,7 +41,7 @@ export function createWolfMotion(fallback, host) {
   if(clips[from].video.readyState<2||clips[to].video.readyState<2)return;
   for(const [index,name] of [from,to].entries()){
    gl.activeTexture(gl.TEXTURE0+index);gl.bindTexture(gl.TEXTURE_2D,clips[name].texture);
-   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,clips[name].video);
+   if(index===0||to!==from)gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,clips[name].video);
   }
   gl.uniform1f(blend,mix);gl.drawArrays(gl.TRIANGLES,0,6);
   canvas.hidden=false;fallback.style.visibility='hidden';
@@ -72,7 +72,7 @@ export function createWolfMotion(fallback, host) {
   start(audioContext){
    if(running||failed)return;running=true;context=audioContext;
    if(context)for(const c of Object.values(clips)){c.gain=context.createGain();c.gain.gain.value=0;context.createMediaElementSource(c.video).connect(c.gain).connect(context.destination);c.video.muted=false;}
-   host.dataset.wolfMotion='idle';clips.howl.video.preload='auto';clips.howl.video.load();
+   host.dataset.wolfMotion='idle'; // Howl is fetched only when Turbo is activated.
    void clips.idle.video.play().then(()=>{frame=requestAnimationFrame(draw);}).catch(fail);
   },
   sound(enabled){audioEnabled=enabled;if(!enabled)for(const name of Object.keys(clips))volume(name,0);},

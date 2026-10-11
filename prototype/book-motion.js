@@ -26,7 +26,7 @@ export function createBookMotion(dialog){
  return {
   async play(onTurn){
    finish?.();dialog.classList.add('book-film');video.currentTime=0;pageSound=false;active=true;
-   const final=new Image();final.src='../assets/runtime/book-opening-final-v1.webp';void final.decode().catch(()=>{});
+   const final=new Image();final.src='../assets/runtime/book-opening-final-v1-delivery.webp';void final.decode().catch(()=>{});
    const cue=()=>{if(!pageSound&&video.currentTime>=1.2){pageSound=true;onTurn?.();}};
    video.addEventListener('timeupdate',cue);
    return new Promise(resolve=>{

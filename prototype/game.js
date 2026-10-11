@@ -1,7 +1,7 @@
-import { createBookMotion } from './book-motion.js?v=20261011-book-film1';
-import { createWolfMotion } from './wolf-motion.js?v=20261011-fallback1';
-import { ART } from './symbols.js?v=20261011-entry16';
-import { createGrid, evaluateGrid, collapseGrid } from './engine.js?v=20261011-entry16';
+import { createBookMotion } from './book-motion.js?v=20261011-light1';
+import { createWolfMotion } from './wolf-motion.js?v=20261011-light1';
+import { ART } from './symbols.js?v=20261011-light1';
+import { createGrid, evaluateGrid, collapseGrid } from './engine.js?v=20261011-light1';
 const $ = id => document.getElementById(id);
 const game=$('game'), board=$('board'), spin=$('spin'), result=$('result');
 const entry=$('entry'), enter=$('enter'), entryStatus=$('entry-status');
@@ -90,8 +90,8 @@ let turbo=false;
 const turboButton=$('turbo'),wolf=document.querySelector('.wolf-reference');
 const wolfMotion=createWolfMotion(wolf,game);
 const wolfNormal=wolf.getAttribute('src');
-const wolfHowl='../assets/runtime/wolf-howl-selected-v7.webp';
-const wolfRage='../assets/runtime/wolf-rage-selected-v6.webp';
+const wolfHowl='../assets/runtime/wolf-howl-selected-v7-delivery.webp';
+const wolfRage='../assets/runtime/wolf-rage-selected-v6-delivery.webp';
 let wolfReaction=0;
 function restoreWolfPose(){
  if(wolfMotion?.available)return;
@@ -223,7 +223,7 @@ async function play(){
 }
 async function start(){
  turboButton.disabled=true;spin.disabled=true;spin.textContent='CARREGANDO…';busy=true;enter.disabled=true;entryStatus.textContent='Preparando os símbolos…';result.textContent='Preparando os símbolos…';
- const resources=[{label:'Corvo na moldura',src:'../assets/runtime/raven-perched-v1.webp'},{label:'Botão Rodar',src:'../assets/runtime/button-spin-v3.svg'},{label:'Botão Turbo',src:'../assets/runtime/button-turbo-v3.svg'},{label:'Botão de acesso',src:'../assets/runtime/button-square-v3.svg'},{label:'Livro do menu',src:'../assets/runtime/menu-book-v1.webp'},...ART,{label:'Lobisomem enfurecido',src:wolfRage},{label:'Lobisomem uivando',src:wolfHowl},{label:'Floresta sob eclipse',src:'../assets/runtime/forest-eclipse-v1.webp'},{label:'Moldura de madeira',src:'../assets/runtime/grid-wood-frame-v2.webp'},{label:'Botão de madeira',src:'../assets/runtime/button-wood-v2.webp'},{label:'Clareira e caçadores',src:'../assets/runtime/forest-stage-v6-canopy.webp'},{label:'Logo',src:'../assets/runtime/logo-moon-ivory-v5.webp'},{label:'Lobisomem',src:'../assets/runtime/wolf-idle-selected-v5.webp'},{label:'Floresta',src:'../assets/runtime/forest-v1.webp'}];
+ const resources=[{label:'Corvo na moldura',src:'../assets/runtime/raven-perched-v1-delivery.webp'},{label:'Botão Rodar',src:'../assets/runtime/button-spin-v3.svg'},{label:'Botão Turbo',src:'../assets/runtime/button-turbo-v3.svg'},{label:'Botão de acesso',src:'../assets/runtime/button-square-v3.svg'},...ART,{label:'Moldura de madeira',src:'../assets/runtime/grid-wood-frame-v2-delivery.webp'},{label:'Botão de madeira',src:'../assets/runtime/button-wood-v2-delivery.webp'},{label:'Clareira e caçadores',src:'../assets/runtime/forest-stage-v6-canopy-delivery.webp'},{label:'Logo',src:'../assets/runtime/logo-moon-ivory-v5-delivery.webp'},{label:'Lobisomem',src:'../assets/runtime/wolf-idle-selected-v5-delivery.webp'},{label:'Floresta',src:'../assets/runtime/forest-v1-delivery.webp'}];
 
  const openingVariant=morphWide.matches?'ultrawide':'continuous';
  const openingVersion=morphWide.matches?'v4':'v3';
