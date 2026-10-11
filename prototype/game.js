@@ -17,6 +17,8 @@ function selectOpeningArt(){
 selectOpeningArt();
 morphWide.addEventListener('change',selectOpeningArt);
 
+let openingAudioUnlocked=false,releaseOpeningAudio;
+const openingAudioReady=new Promise(resolve=>{releaseOpeningAudio=resolve;});
 let openingMorphPlayback=Promise.resolve();
 let cancelOpeningMorph=null;
 function prepareOpeningMorph(){
@@ -48,7 +50,7 @@ function prepareOpeningMorph(){
    if(done)return;
    clearTimeout(timeout);
    if(visibleSince!==null){remaining-=performance.now()-visibleSince;visibleSince=null;}
-   if(document.hidden){openingMorph.pause();return;}
+   if(document.hidden||!openingAudioUnlocked){openingMorph.pause();return;}
    if(remaining<=0){fail();return;}
    visibleSince=performance.now();timeout=setTimeout(fail,remaining);
    openingMorph.play().catch(()=>{if(!document.hidden&&!done)fail();});
@@ -58,6 +60,7 @@ function prepareOpeningMorph(){
   openingMorph.addEventListener('ended',finish,{once:true});
   openingMorph.addEventListener('error',fail,{once:true});
   syncMorphVisibility();
+  void openingAudioReady.then(syncMorphVisibility);
  });
 }
 // Decode the actual art and human poster before displaying or starting the morph.
@@ -257,6 +260,7 @@ async function start(){
 }
 let openingScratch=null;
 async function scratchAfterMorph(){
+ await openingAudioReady;
  await openingVisuals;
  // Resizing while loading may replace the video; await the current playback.
  let playback;
@@ -351,6 +355,7 @@ const forestTracks=[
  {src:'../assets/runtime/opening-wolf-grunt-v1.mp3',level:.18,loop:false,channel:'sfx',introOnly:true}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
+forestTracks[7].media.addEventListener('playing',()=>{entry.dataset.musicPlayback='playing';});
 let rewardMusicLevel=1,rewardMusicTimer;
 let cardLandingBuffer=null,cardLandingBus=null;
 const cardLandingVoices=new Set();
@@ -463,6 +468,7 @@ function startForestAudio(){
   const Context=window.AudioContext||window.webkitAudioContext;
   if(Context){
    forestAudioContext=new Context();
+   forestAudioContext.addEventListener('statechange',()=>{entry.dataset.audioContext=forestAudioContext.state;});
    prepareCardLanding(forestAudioContext);
    for(const track of forestTracks){
     track.gain=forestAudioContext.createGain();track.gain.gain.value=0;
@@ -534,11 +540,16 @@ refreshAudioPreferences();
 // Opening soundtrack runs alongside loading; playback policy may require a real gesture.
 function unlockOpeningAudio(event){
  if(!event.isTrusted||entry.hidden)return;
+ // Run resume and media.play directly inside the trusted click/touch gesture.
  startForestAudio();
+ if(openingAudioUnlocked)return;
+ openingAudioUnlocked=true;
+ $('opening-audio-start').hidden=true;
+ releaseOpeningAudio();
 }
-document.addEventListener('pointerdown',unlockOpeningAudio,{passive:true});
-document.addEventListener('keydown',unlockOpeningAudio);
-startForestAudio();
+$('opening-audio-start').addEventListener('click',unlockOpeningAudio);
+// No automatic soundtrack attempt: mobile browsers would reject it silently.
+
 const gameMenu=$('game-menu');
 const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname)||location.protocol==='file:';
 const inviteURL=new URL(location.href);inviteURL.search='';inviteURL.hash='';
