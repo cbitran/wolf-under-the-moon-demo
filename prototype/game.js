@@ -75,10 +75,11 @@ function restoreWolfPose(){
  wolf.alt=turbo?'Lobisomem agachado uivando para a lua eclipsada.':'Lobisomem agachado, com olhar feroz e a garra apoiada à frente.';
 }
 async function showRoundReaction(won){
+ if(!won){restoreWolfPose();return;}
  const reaction=++wolfReaction;
- game.dataset.wolfState=won?'rage':'howl';
- wolf.src=won?wolfRage:wolfHowl;
- wolf.alt=won?'Lobisomem enfurecido com o ganho do jogador.':'Lobisomem em pose de uivo de triunfo após rodada sem ganho.';
+ game.dataset.wolfState='rage';
+ wolf.src=wolfRage;
+ wolf.alt='Lobisomem enfurecido com o ganho do jogador.';
  // Static poses provide the result mapping until approved motion clips exist.
  await animate(wolf,[{opacity:1},{opacity:1}],{duration:1800},{keepDuration:true});
  if(reaction===wolfReaction)restoreWolfPose();
