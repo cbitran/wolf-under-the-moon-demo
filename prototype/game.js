@@ -304,9 +304,10 @@ const audioPreferences={music:true,sfx:true};
 try{const saved=JSON.parse(localStorage.getItem('wolf-audio-preferences')||'null');for(const key of ['music','sfx'])if(typeof saved?.[key]==='boolean')audioPreferences[key]=saved[key];}catch{}
 // Start inside the Enter gesture, so mobile browsers can unlock sound.
 const forestTracks=[
- {src:'../assets/runtime/forest-wind.mp3',level:.12,loop:true},
- {src:'../assets/runtime/forest-searchers.mp3',level:.035,loop:true},
- {src:'../assets/runtime/wolf-howl.mp3',level:.18,loop:false}
+ {src:'../assets/runtime/forest-wind.mp3',level:.12,loop:true,channel:'sfx'},
+ {src:'../assets/runtime/forest-searchers.mp3',level:.035,loop:true,channel:'sfx'},
+ {src:'../assets/runtime/wolf-howl.mp3',level:.18,loop:false,channel:'sfx'},
+ {src:'../assets/runtime/forest-music.mp3',level:.14,loop:true,channel:'music'}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
 function startForestAudio(){
@@ -322,12 +323,12 @@ function startForestAudio(){
    }
   }
  }
- if(audioPreferences.sfx)void forestAudioContext?.resume().catch(()=>{});
+ if(audioPreferences.sfx||audioPreferences.music)void forestAudioContext?.resume().catch(()=>{});
  syncForestAudio();
 }
 function syncForestAudio(){
- const audible=forestAudioStarted&&audioPreferences.sfx&&!document.hidden;
  for(const track of forestTracks){
+  const audible=forestAudioStarted&&audioPreferences[track.channel]&&!document.hidden;
   if(!audible){track.media.pause();if(!track.loop)track.media.currentTime=0;}
   const level=audible?track.level:0;
   if(track.gain){
@@ -363,7 +364,7 @@ function refreshAudioPreferences(){
 }
 for(const key of ['music','sfx'])$(key+'-toggle').onclick=()=>{
  audioPreferences[key]=!audioPreferences[key];
- if(key==='sfx'&&audioPreferences.sfx)startForestAudio();
+ if(audioPreferences[key])startForestAudio();
  try{localStorage.setItem('wolf-audio-preferences',JSON.stringify(audioPreferences));}catch{}
  refreshAudioPreferences();
 };
