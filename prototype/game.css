@@ -547,7 +547,7 @@ body:not(.opening-active) .game{flex-shrink:0;width:min(100%,390px);height:auto;
 /* Fit the viewport by giving spare height to the horizon, not to document scroll. */
 body:not(.opening-active){height:var(--game-viewport-height,100svh);min-height:0;overflow:hidden;padding-top:0;padding-bottom:0}
 body:not(.opening-active) .game{height:var(--game-viewport-height,100svh);min-height:0;max-height:var(--game-viewport-height,100svh);display:flex;flex-direction:column;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:max(6px,env(safe-area-inset-bottom))}
-.game header{flex:none;position:relative;z-index:5}
+.game header{flex:none;position:relative;z-index:5;top:12px}
 .game .character-stage{flex:1 1 0;min-height:0;aspect-ratio:auto;height:auto;margin-top:-12px}
 .game .play-area{flex:none;min-width:0}
 .game .spin-controls{margin-top:4px}
