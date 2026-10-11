@@ -465,3 +465,12 @@
 .entry.paused .opening-fog i{animation-play-state:paused}
 @media(min-aspect-ratio:16/9){.opening-fog{mask-image:url('../assets/runtime/opening-fog-mask-ultra.svg')}}
 @media(prefers-reduced-motion:reduce){.opening-fog i{animation:none;opacity:.45}}
+
+/* Persistent scroll cue for touch browsers whose native scrollbar auto-hides. */
+.book-page{padding-right:16px;scrollbar-width:none;touch-action:pan-y}
+.book-page::-webkit-scrollbar{display:none}
+.book-scroll-track{position:absolute;right:2px;top:3px;bottom:3px;width:5px;border-radius:3px;background:#76513530;pointer-events:none;box-shadow:inset 0 0 0 1px #76513525}
+.book-scroll-track[hidden]{display:none}
+.book-scroll-track span{position:absolute;top:0;left:0;width:100%;min-height:24px;border-radius:3px;background:#765135;box-shadow:0 0 1px #402c1e80}
+.book-content .book-scroll-hint{flex:none;height:20px;min-height:20px;margin:3px 0 0;padding:0;text-align:center;font:12px/20px Georgia,serif;color:#624326;visibility:hidden}
+.book-content .book-scroll-hint.has-more{visibility:visible}

@@ -454,10 +454,27 @@ $('menu-close').onclick=()=>gameMenu.close();
 $('menu-rules').onclick=()=>turnBook(1);
 const bookPages=[...gameMenu.querySelectorAll('[data-book-page]')];
 let bookPage=0,bookTurning=false;
+function updateBookScroll(){
+ const page=bookPages[bookPage],track=$('book-scroll-track'),thumb=$('book-scroll-thumb');
+ const overflow=page.scrollHeight-page.clientHeight;
+ const scrollable=page.clientHeight>0&&overflow>2;
+ track.hidden=!scrollable;
+ $('book-scroll-hint').classList.toggle('has-more',scrollable&&page.scrollTop<overflow-2);
+ if(!scrollable)return;
+ const rail=track.clientHeight;
+ const height=Math.min(rail,Math.max(24,rail*page.clientHeight/page.scrollHeight));
+ thumb.style.height=`${height}px`;
+ thumb.style.transform=`translateY(${(rail-height)*Math.max(0,Math.min(1,page.scrollTop/overflow))}px)`;
+}
+for(const page of bookPages)page.addEventListener('scroll',updateBookScroll,{passive:true});
+const bookScrollObserver=new ResizeObserver(updateBookScroll);
+for(const page of bookPages)bookScrollObserver.observe(page);
+
 function renderBookPage(){
  bookPages.forEach((page,index)=>{page.hidden=index!==bookPage;if(index===bookPage)page.scrollTop=0;});
  $('book-page-number').textContent=`${bookPage+1} / ${bookPages.length}`;
  $('book-prev').disabled=bookPage===0;$('book-next').disabled=bookPage===bookPages.length-1;
+ requestAnimationFrame(updateBookScroll);
 }
 let bookOpeningId=0;
 async function openBook(page=0){
