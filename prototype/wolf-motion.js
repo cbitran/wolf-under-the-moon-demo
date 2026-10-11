@@ -31,7 +31,7 @@ export function createWolfMotion(fallback, host) {
   if(error)host.dataset.wolfMotionError=error.name||'MediaError';
  }
  for(const c of Object.values(clips))c.video.addEventListener('error',()=>fail(c.video.error));
- const volume=(name,value)=>{const c=clips[name];const level=value*(name==='howl'?.14:.22)*(audioEnabled&&!document.hidden?1:0);if(c.gain)c.gain.gain.setTargetAtTime(level,context.currentTime,.025);};
+ const volume=(name,value)=>{const c=clips[name];const level=value*(name==='howl'?.14:0)*(audioEnabled&&!document.hidden?1:0);if(c.gain)c.gain.gain.setTargetAtTime(level,context.currentTime,.025);};
  function draw(time){
   if(!running||document.hidden)return;
   frame=requestAnimationFrame(draw);if(time-last<32)return;last=time;

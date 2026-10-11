@@ -1,5 +1,5 @@
 import { createBookMotion } from './book-motion.js?v=20261011-light1';
-import { createWolfMotion } from './wolf-motion.js?v=20261011-light1';
+import { createWolfMotion } from './wolf-motion.js?v=20261011-audio-zero1';
 import { ART } from './symbols.js?v=20261011-light1';
 import { createGrid, evaluateGrid, collapseGrid } from './engine.js?v=20261011-light1';
 const $ = id => document.getElementById(id);
@@ -355,10 +355,11 @@ const forestTracks=[
  {src:'../assets/runtime/ui-click.mp3',level:.12,loop:false,channel:'sfx'},
  {src:'../assets/runtime/turbo-music-loop-v2.mp3',level:.14,loop:true,channel:'music',mode:'turbo'},
  {src:'../assets/runtime/collect-points.mp3',level:.32,loop:false,channel:'sfx'},
- {src:'../assets/runtime/opening-wolf-grunt-v1.mp3',level:.3,loop:false,channel:'sfx',introOnly:true}
+ {src:'../assets/runtime/opening-wolf-grunt-v1.mp3',level:.3,loop:false,channel:'sfx',introOnly:true},
+ {src:'../assets/runtime/wolf-grunt-loop-v1.mp3',level:.12,loop:true,bufferLoop:true,channel:'sfx'}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
-const introEffectBytes=Promise.all([2,4,5,6,8,9].map(async index=>{
+const introEffectBytes=Promise.all([2,4,5,6,8,9,10].map(async index=>{
  const response=await fetch(forestTracks[index].src);
  if(!response.ok)throw new Error('Efeito da introdução indisponível');
  return {index,bytes:await response.arrayBuffer()};
@@ -385,6 +386,7 @@ function playBufferedEffect(track,offset=0){
  const voice=forestAudioContext.createBufferSource();voice.buffer=track.buffer;
  voice.connect(track.gain);track.gain.gain.setValueAtTime(track.level,forestAudioContext.currentTime);
  track.voice=voice;voice.onended=()=>{voice.disconnect();if(track.voice===voice)track.voice=null;};
+ voice.loop=Boolean(track.bufferLoop);
  voice.start(0,Math.min(offset,Math.max(0,track.buffer.duration-.01)));return true;
 }
 function pauseIntroGrunt(){if(openingGrunt.voice){openingGrunt.voice.stop();openingGrunt.voice=null;}openingGrunt.media.pause();}
@@ -533,7 +535,7 @@ function startForestAudio(){
  if(audioChannelEnabled('sfx')||audioChannelEnabled('music'))void forestAudioContext?.resume().catch(()=>{});
  syncForestAudio();
  // Unlock each ambient element during the gesture, including the game's normal track.
- if(navigator.userActivation?.isActive)for(const track of forestTracks.filter(t=>t.loop)){
+ if(navigator.userActivation?.isActive)for(const track of forestTracks.filter(t=>t.loop&&!t.bufferLoop)){
   void track.media.play().then(()=>syncForestAudio()).catch(error=>{game.dataset.audioUnlockError=error.name;});
  }
 }
@@ -549,6 +551,14 @@ function syncForestAudio(fadeMusic=false){
    ?track.mode===(!entry.hidden||turbo?'turbo':'normal')
    :track.introOnly?!entry.hidden:!track.loop||entry.hidden;
   const audible=enabled&&selected;
+  if(track.channel==='music'&&audible&&!track.wasAudible)track.media.currentTime=0;
+  track.wasAudible=audible;
+  if(track.bufferLoop){
+   if(audible&&!track.voice)playBufferedEffect(track);
+   if(!audible&&track.voice){track.voice.stop();track.voice=null;}
+   game.dataset.gruntLoop=track.voice?'playing':'stopped';
+   continue;
+  }
   const fadingOut=crossfade&&enabled&&!selected&&track.gain&&!track.media.paused;
   if(!audible&&!fadingOut){track.media.pause();if(!track.loop)track.media.currentTime=0;}
   const level=audible?track.level*(track.channel==='music'?rewardMusicLevel:1):0;
@@ -596,15 +606,14 @@ for(const key of ['music','sfx'])$(key+'-toggle').onclick=()=>{
 refreshAudioPreferences();
 // Opening soundtrack runs alongside loading; playback policy may require a real gesture.
 function unlockOpeningAudio(event){
- if(!event.isTrusted)return;
+ if(!event.isTrusted||(!entry.hidden&&!introBeginning))return;
  // Retry silently on ordinary interaction; never block the intro behind a prompt.
  startForestAudio();
  if(!entry.hidden)syncOpeningGrunt();
 }
 document.addEventListener('pointerup',unlockOpeningAudio,{passive:true});
 document.addEventListener('keydown',unlockOpeningAudio);
-// Try on every browser; retain the existing Enter fallback only if playback is blocked.
-startForestAudio();
+// The first Enter gesture owns the soundtrack start; no silent pre-roll.
 const gameMenu=$('game-menu');
 const bookMotion=createBookMotion(gameMenu);
 const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname)||location.protocol==='file:';
