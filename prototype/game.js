@@ -340,16 +340,21 @@ const forestTracks=[
  {src:'../assets/runtime/book-page-turn.mp3',level:.12,loop:false,channel:'sfx'},
  {src:'../assets/runtime/ui-click.mp3',level:.12,loop:false,channel:'sfx'},
  {src:'../assets/runtime/turbo-music-loop-v2.mp3',level:.14,loop:true,channel:'music',mode:'turbo'},
- {src:'../assets/runtime/collect-points.mp3',level:.14,loop:false,channel:'sfx'}
+ {src:'../assets/runtime/collect-points.mp3',level:.32,loop:false,channel:'sfx'}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
+let rewardMusicLevel=1,rewardMusicTimer;
 const pointsSound=forestTracks[8];
 pointsSound.media.preload='auto';pointsSound.media.load();
 function playPointsSound(){
+ game.dataset.pointsAudio=JSON.stringify({enabled:audioPreferences.sfx,context:forestAudioContext?.state,ready:pointsSound.media.readyState,gain:pointsSound.gain?.gain.value});
  if(!forestAudioStarted||!audioPreferences.sfx||document.hidden)return;
+ clearTimeout(rewardMusicTimer);rewardMusicLevel=.5;syncForestAudio();
+ rewardMusicTimer=setTimeout(()=>{rewardMusicLevel=1;syncForestAudio();},800);
  pointsSound.media.currentTime=0;
- void pointsSound.media.play().catch(()=>{});
+ void pointsSound.media.play().then(()=>{game.dataset.pointsAudioResult='playing';}).catch(error=>{game.dataset.pointsAudioResult=error.name;console.warn('Não foi possível reproduzir o efeito de ganho:',error);});
 }
+pointsSound.media.addEventListener('ended',()=>{game.dataset.pointsAudioResult='ended';});
 const uiClickSound=forestTracks[6];
 uiClickSound.media.preload='auto';uiClickSound.media.load();
 function playUiClick(){
@@ -422,7 +427,7 @@ function syncForestAudio(fadeMusic=false){
   const audible=enabled&&selected;
   const fadingOut=crossfade&&enabled&&!selected&&track.gain&&!track.media.paused;
   if(!audible&&!fadingOut){track.media.pause();if(!track.loop)track.media.currentTime=0;}
-  const level=audible?track.level:0;
+  const level=audible?track.level*(track.channel==='music'?rewardMusicLevel:1):0;
   if(track.gain){
    const time=forestAudioContext.currentTime;
    const gain=track.gain.gain;
