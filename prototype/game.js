@@ -297,8 +297,10 @@ async function scratchAfterMorph(){
 async function openGame(){
  if(entering||!introStarted)return;entering=true;enter.disabled=true;
  startForestAudio();
- enter.textContent='ENTRANDO';
  await openingScratch;
+ enter.textContent='ENTRANDO';
+ // Keep the status readable for three visible seconds, including reduced-motion mode.
+ await animate(enter,[{opacity:1},{opacity:1}],{duration:3000},{keepDuration:true});
  await animate(entry,[{opacity:1},{opacity:0}],{duration:350,easing:'ease-out',fill:'forwards'});
  entry.hidden=true;openingMorph.pause();game.hidden=false;game.inert=false;document.body.classList.remove('opening-active');
  syncForestAudio(true);
