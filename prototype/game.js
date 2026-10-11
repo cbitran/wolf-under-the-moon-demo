@@ -59,7 +59,26 @@ function prepareOpeningMorph(){
   syncMorphVisibility();
  });
 }
-prepareOpeningMorph();
+// Decode the actual art and human poster before displaying or starting the morph.
+// SVG embedded rasters use data URLs, avoiding partially decoded external SVG images on mobile.
+async function decodeOpeningArt(){
+ const wide=morphWide.matches;
+ const base=entry.querySelector('.opening-art');
+ const poster=`../assets/runtime/opening-seedance-head-${wide?'ultra':'standard'}-poster-v2.webp`;
+ openingMorph.poster=poster;
+ const posterImage=new Image();posterImage.src=poster;
+ const layer=entry.querySelector(wide?'.ultra-letter-layer image':'.standard-letter-layer image');
+ const embedded=fetch(layer.dataset.artSrc).then(response=>{if(!response.ok)throw new Error('Arte de abertura indisponível');return response.blob();}).then(blob=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{layer.setAttribute('href',reader.result);resolve();};reader.onerror=reject;reader.readAsDataURL(blob);}));
+ const portrait=matchMedia('(max-width:760px) and (max-aspect-ratio:1/1)').matches;
+ const backdrop=new Image();
+ if(portrait)backdrop.src='../assets/runtime/opening-vertical-expansion-v1.webp';
+ await Promise.all([base.decode(),posterImage.decode(),embedded,...(portrait?[backdrop.decode()]:[])]);
+ entry.classList.add('art-ready');
+ prepareOpeningMorph();
+}
+const openingVisuals=decodeOpeningArt().catch(error=>{
+ console.error(error);entry.classList.add('art-ready');openingMorph.hidden=true;
+});
 morphWide.addEventListener('change',prepareOpeningMorph);
 
 let turbo=false;
@@ -233,6 +252,7 @@ async function start(){
 }
 let openingScratch=null;
 async function scratchAfterMorph(){
+ await openingVisuals;
  // Resizing while loading may replace the video; await the current playback.
  let playback;
  do{playback=openingMorphPlayback;await playback;}while(playback!==openingMorphPlayback);
@@ -268,7 +288,7 @@ async function openGame(){
  enter.textContent='ENTRANDO';
  await openingScratch;
  await animate(entry,[{opacity:1},{opacity:0}],{duration:350,easing:'ease-out',fill:'forwards'});
- entry.hidden=true;openingMorph.pause();game.inert=false;
+ entry.hidden=true;openingMorph.pause();game.hidden=false;game.inert=false;document.body.classList.remove('opening-active');
  syncForestAudio(true);
  game.dataset.phase='entering';result.textContent='Os símbolos estão entrando no tabuleiro.';
  const step=board.children[4].offsetTop-board.children[0].offsetTop;

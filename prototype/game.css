@@ -474,3 +474,18 @@
 .book-scroll-track span{position:absolute;top:0;left:0;width:100%;min-height:24px;border-radius:3px;background:#765135;box-shadow:0 0 1px #402c1e80}
 .book-content .book-scroll-hint{flex:none;height:20px;min-height:20px;margin:3px 0 0;padding:0;text-align:center;font:12px/20px Georgia,serif;color:#624326;visibility:hidden}
 .book-content .book-scroll-hint.has-more{visibility:visible}
+
+/* Isolate the introduction from game rendering, including during network loading. */
+body.opening-active{overflow:hidden}
+#game[hidden]{display:none!important}
+.entry{height:100dvh;min-height:0;isolation:isolate;z-index:100}
+.entry[hidden]{display:none!important}
+.entry:not(.art-ready) .entry-composition{visibility:hidden}
+
+/* Portrait outpaint shares the original scene registration; foreground is never regenerated. */
+@media(max-width:760px) and (max-aspect-ratio:1/1){
+ .entry .entry-composition{width:max(calc(100vw * 1672 / 820),calc(100dvh * 1.01));height:auto;aspect-ratio:1672 / 941;max-height:none;margin:0;transform:translateY(-5.12%);isolation:isolate}
+ .entry .entry-composition::before{content:'';position:absolute;z-index:-1;pointer-events:none;left:-.1%;top:-33.9%;width:100.16%;height:177.97%;background:url('../assets/runtime/opening-vertical-expansion-v1.webp') center/100% 100% no-repeat}
+}
+
+.opening-fog{opacity:.45}
