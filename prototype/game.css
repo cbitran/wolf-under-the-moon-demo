@@ -293,7 +293,7 @@
 .spin-controls{margin-top:13px;gap:10px;align-items:start}
 .spin-mount,.turbo-mount{height:54px}
 .spin-controls #spin,.spin-controls #spin:hover:not(:disabled),.spin-controls #turbo,.spin-controls #turbo[aria-pressed="true"]{height:54px;min-height:54px;padding:0 12px;border:12px solid transparent;border-image:url('../assets/runtime/button-wood-v2.webp') 28% 12% fill / 12px 14px / 0 stretch;background:none;border-radius:0;box-shadow:none;opacity:1;display:flex;align-items:center;justify-content:center;gap:3px}
-.spin-controls #spin{font-size:18px;letter-spacing:1px}
+.spin-controls #spin{font-size:14px;letter-spacing:.6px}
 .spin-controls #turbo{flex-direction:column;gap:0;font-size:10px;line-height:12px;letter-spacing:.6px}
 .spin-controls #turbo span{font-size:19px;line-height:14px}
 .spin-controls #turbo:before,.spin-controls #turbo:after{content:none}
@@ -318,7 +318,7 @@
 .entry-composition .loading-progress{inset:74.4% auto auto 39.2%;width:20.5%;height:5.5%}
 .entry-composition .loading-progress label{left:23%;width:54%;height:43%;padding:0 3%;font-size:clamp(8px,.85cqw,14px)}
 .entry-composition .loading-progress progress{left:1%;top:62%;width:98%;height:32%}
-.entry .entry-composition #enter{left:42%;top:83.4%;width:15.2%;height:5.2%;min-height:0;padding:0;font-size:clamp(12px,1.65cqw,27px)}
+.entry .entry-composition #enter{left:42%;top:83.4%;width:15.2%;height:5.2%;min-height:0;padding:0;font-size:clamp(10px,1.32cqw,21px)}
 @media(max-width:760px){
  .entry .entry-composition{width:calc(100vw * 1672 / 820);height:calc(100vw * 941 / 820);aspect-ratio:1672 / 941;margin:0}
  .entry .entry-composition #enter{min-height:0;top:83.4%}
@@ -359,7 +359,7 @@
  .entry-composition .loading-progress{left:42.8%;top:76%;width:12.8%;height:6%}
  .entry-composition .loading-progress label{left:22%;width:56%;height:42%;font-size:clamp(8px,.62cqw,14px)}
  .entry-composition .loading-progress progress{top:64%;height:34%}
- .entry .entry-composition #enter{left:44.7%;top:85.1%;width:9.4%;height:5.4%;min-height:0;font-size:clamp(12px,1.15cqw,26px)}
+ .entry .entry-composition #enter{left:44.7%;top:85.1%;width:9.4%;height:5.4%;min-height:0;font-size:clamp(10px,.92cqw,20px)}
 }
 
 /* The perched reference is anchored to the upper right oak rail. */

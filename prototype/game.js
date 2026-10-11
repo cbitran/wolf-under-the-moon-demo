@@ -168,7 +168,7 @@ async function play(){
  restoreWolfPose();
  clearTimeout(rewardTimer);board.parentElement.querySelectorAll('.win-reward').forEach(node=>node.remove());
  busy=true;turboButton.disabled=true;spin.disabled=true;
- game.dataset.phase='spinning';result.textContent='A floresta guarda seus segredos…';$('earned').textContent='—';spin.textContent='GIRANDO…';
+ game.dataset.phase='spinning';result.textContent='A floresta guarda seus segredos…';$('earned').textContent='—';spin.textContent='RODANDO…';
  try{
   const speed=turbo?.45:1;
   let grid=createGrid();
@@ -219,11 +219,11 @@ async function play(){
   void showRoundReaction(roundPoints>0);
   result.textContent=roundPoints?`Rodada concluída: ${chain} ${chain===1?'ganho':'ganhos'}, ${roundPoints} pontos no total.`:'Nenhuma combinação. A caçada continua.';
  }catch(error){result.textContent='Não foi possível concluir a rodada. Tente novamente.';console.error(error);}
- finally{busy=false;turboButton.disabled=false;spin.disabled=false;spin.textContent='GIRAR';}
+ finally{busy=false;turboButton.disabled=false;spin.disabled=false;spin.textContent='RODAR';}
 }
 async function start(){
  turboButton.disabled=true;spin.disabled=true;spin.textContent='CARREGANDO…';busy=true;enter.disabled=true;entryStatus.textContent='Preparando os símbolos…';result.textContent='Preparando os símbolos…';
- const resources=[{label:'Corvo na moldura',src:'../assets/runtime/raven-perched-v1.webp'},{label:'Botão Girar',src:'../assets/runtime/button-spin-v3.svg'},{label:'Botão Turbo',src:'../assets/runtime/button-turbo-v3.svg'},{label:'Botão de acesso',src:'../assets/runtime/button-square-v3.svg'},{label:'Livro do menu',src:'../assets/runtime/menu-book-v1.webp'},...ART,{label:'Lobisomem enfurecido',src:wolfRage},{label:'Lobisomem uivando',src:wolfHowl},{label:'Floresta sob eclipse',src:'../assets/runtime/forest-eclipse-v1.webp'},{label:'Moldura de madeira',src:'../assets/runtime/grid-wood-frame-v2.webp'},{label:'Botão de madeira',src:'../assets/runtime/button-wood-v2.webp'},{label:'Clareira e caçadores',src:'../assets/runtime/forest-stage-v6-canopy.webp'},{label:'Logo',src:'../assets/runtime/logo-moon-ivory-v5.webp'},{label:'Lobisomem',src:'../assets/runtime/wolf-idle-selected-v5.webp'},{label:'Floresta',src:'../assets/runtime/forest-v1.webp'}];
+ const resources=[{label:'Corvo na moldura',src:'../assets/runtime/raven-perched-v1.webp'},{label:'Botão Rodar',src:'../assets/runtime/button-spin-v3.svg'},{label:'Botão Turbo',src:'../assets/runtime/button-turbo-v3.svg'},{label:'Botão de acesso',src:'../assets/runtime/button-square-v3.svg'},{label:'Livro do menu',src:'../assets/runtime/menu-book-v1.webp'},...ART,{label:'Lobisomem enfurecido',src:wolfRage},{label:'Lobisomem uivando',src:wolfHowl},{label:'Floresta sob eclipse',src:'../assets/runtime/forest-eclipse-v1.webp'},{label:'Moldura de madeira',src:'../assets/runtime/grid-wood-frame-v2.webp'},{label:'Botão de madeira',src:'../assets/runtime/button-wood-v2.webp'},{label:'Clareira e caçadores',src:'../assets/runtime/forest-stage-v6-canopy.webp'},{label:'Logo',src:'../assets/runtime/logo-moon-ivory-v5.webp'},{label:'Lobisomem',src:'../assets/runtime/wolf-idle-selected-v5.webp'},{label:'Floresta',src:'../assets/runtime/forest-v1.webp'}];
 
  const openingVariant=morphWide.matches?'ultrawide':'continuous';
  const openingVersion=morphWide.matches?'v4':'v3';
@@ -323,7 +323,7 @@ async function openGame(){
   }
  }finally{
   board.classList.remove('cascading');busy=false;spin.disabled=false;turboButton.disabled=false;
-  spin.textContent='GIRAR';game.dataset.phase='idle';result.textContent='A lua surgiu. Comece a caçada.';
+  spin.textContent='RODAR';game.dataset.phase='idle';result.textContent='A lua surgiu. Comece a caçada.';
   spin.focus({preventScroll:true});
  }
 }
