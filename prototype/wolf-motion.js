@@ -24,7 +24,7 @@ export function createWolfMotion(fallback, host) {
   return [name,{video,texture,gain:null}];
  }));
  let running=false,current='idle',transition=null,token=0,frame=0,last=0,audioEnabled=false,context=null;
- const volume=(name,value)=>{const c=clips[name];const level=value*(name==='howl'?.14:.055)*(audioEnabled&&!document.hidden?1:0);if(c.gain)c.gain.gain.setTargetAtTime(level,context.currentTime,.025);};
+ const volume=(name,value)=>{const c=clips[name];const level=value*(name==='howl'?.14:.22)*(audioEnabled&&!document.hidden?1:0);if(c.gain)c.gain.gain.setTargetAtTime(level,context.currentTime,.025);};
  function draw(time){
   if(!running||document.hidden)return;
   frame=requestAnimationFrame(draw);if(time-last<32)return;last=time;

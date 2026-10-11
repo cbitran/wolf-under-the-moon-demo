@@ -1,4 +1,4 @@
-import { createWolfMotion } from './wolf-motion.js?v=20261011-wolf-motion1';
+import { createWolfMotion } from './wolf-motion.js?v=20261011-grunt-volume2';
 import { ART } from './symbols.js?v=20261011-entry16';
 import { createGrid, evaluateGrid, collapseGrid } from './engine.js?v=20261011-entry16';
 const $ = id => document.getElementById(id);
