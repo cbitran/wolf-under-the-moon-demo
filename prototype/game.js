@@ -244,6 +244,7 @@ async function scratchAfterMorph(){
    openingMorph.pause();
   }
  }else openingMorph.hidden=true;
+ playLogoTear();
  const cuts=[...entry.querySelectorAll('.entry-cut')],edges=[...entry.querySelectorAll('.entry-edge')];
  // Linear travel and square mask caps make the cut advance along the letter.
  // The moving highlight uses the same path and timing as the reveal front.
@@ -307,9 +308,25 @@ const forestTracks=[
  {src:'../assets/runtime/forest-wind.mp3',level:.12,loop:true,channel:'sfx'},
  {src:'../assets/runtime/forest-searchers.mp3',level:.035,loop:true,channel:'sfx'},
  {src:'../assets/runtime/wolf-howl.mp3',level:.18,loop:false,channel:'sfx'},
- {src:'../assets/runtime/forest-music.mp3',level:.14,loop:true,channel:'music'}
+ {src:'../assets/runtime/forest-music.mp3',level:.14,loop:true,channel:'music'},
+ {src:'../assets/runtime/logo-claw-tear.mp3',level:.22,loop:false,channel:'sfx'}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
+const logoTear=forestTracks[4];
+logoTear.media.preload='auto';logoTear.media.load();
+let logoTearPlayed=false;
+function playLogoTear(){
+ if(logoTearPlayed)return;
+ logoTearPlayed=true;
+ if(!audioPreferences.sfx||document.hidden||reduced.matches)return;
+ if(logoTear.gain){
+  if(forestAudioContext.state!=='running')return;
+  logoTear.gain.gain.setValueAtTime(logoTear.level,forestAudioContext.currentTime);
+ }else logoTear.media.volume=logoTear.level;
+ // A blocked opening sound is skipped, never replayed late after Enter.
+ void logoTear.media.play().catch(()=>{});
+}
+
 function startForestAudio(){
  if(!forestAudioStarted){
   forestAudioStarted=true;
