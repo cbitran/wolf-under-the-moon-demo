@@ -54,7 +54,7 @@ function prepareOpeningMorph(){
    if(document.hidden||!introStarted){openingMorph.pause();return;}
    if(remaining<=0){fail();return;}
    visibleSince=performance.now();timeout=setTimeout(fail,remaining);
-   openingMorph.play().catch(()=>{if(!document.hidden&&!done)fail();});
+   openingMorph.play().then(()=>{entry.dataset.morphPlayback='playing';}).catch(error=>{entry.dataset.morphPlayback=error.name;if(!document.hidden&&!done)fail();});
   };
   document.addEventListener('visibilitychange',syncMorphVisibility);
   cancelOpeningMorph=finish;
@@ -297,11 +297,12 @@ async function scratchAfterMorph(){
 async function openGame(){
  if(entering||enter.disabled)return;entering=true;enter.disabled=true;
  startForestAudio();
+ // Start media inside the actual Enter gesture, before any awaited transition.
+ wolfMotion?.start(forestAudioContext);
  enter.textContent='ENTRANDO';
  await openingScratch;
  await animate(entry,[{opacity:1},{opacity:0}],{duration:350,easing:'ease-out',fill:'forwards'});
  entry.hidden=true;openingMorph.pause();game.hidden=false;game.inert=false;document.body.classList.remove('opening-active');
- wolfMotion?.start(forestAudioContext);
  syncForestAudio(true);
  game.dataset.phase='entering';result.textContent='Os símbolos estão entrando no tabuleiro.';
  const step=board.children[4].offsetTop-board.children[0].offsetTop;
@@ -359,7 +360,7 @@ const forestTracks=[
  {src:'../assets/runtime/opening-wolf-grunt-v1.mp3',level:.3,loop:false,channel:'sfx',introOnly:true}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
-const introEffectBytes=Promise.all([4,9].map(async index=>{
+const introEffectBytes=Promise.all([2,4,5,6,8,9].map(async index=>{
  const response=await fetch(forestTracks[index].src);
  if(!response.ok)throw new Error('Efeito da introdução indisponível');
  return {index,bytes:await response.arrayBuffer()};
@@ -370,6 +371,7 @@ async function beginIntroduction(){
  if(introStarted||introBeginning)return;
  introBeginning=true;
  enter.disabled=true;enter.textContent='CARREGANDO';
+ entryStatus.textContent='Preparando áudio e apresentação…';
  startForestAudio();
  try{
   if(forestAudioContext)await forestAudioContext.resume();
@@ -377,8 +379,9 @@ async function beginIntroduction(){
   introStarted=true;releaseIntro();
  }catch(error){introBeginning=false;entry.dataset.audioError=error.name;enter.textContent='ENTRAR';enter.disabled=false;}
 }
-function playIntroBuffer(track,offset=0){
+function playBufferedEffect(track,offset=0){
  if(!track.buffer||forestAudioContext?.state!=='running')return false;
+ if(track.voice){track.voice.stop();track.voice=null;}
  const voice=forestAudioContext.createBufferSource();voice.buffer=track.buffer;
  voice.connect(track.gain);track.gain.gain.setValueAtTime(track.level,forestAudioContext.currentTime);
  track.voice=voice;voice.onended=()=>{voice.disconnect();if(track.voice===voice)track.voice=null;};
@@ -435,6 +438,7 @@ function playPointsSound(){
  if(!forestAudioStarted||!audioPreferences.sfx||document.hidden)return;
  clearTimeout(rewardMusicTimer);rewardMusicLevel=.5;syncForestAudio();
  rewardMusicTimer=setTimeout(()=>{rewardMusicLevel=1;syncForestAudio();},800);
+ if(playBufferedEffect(pointsSound)){game.dataset.pointsAudioResult='playing';return;}
  pointsSound.media.currentTime=0;
  void pointsSound.media.play().then(()=>{game.dataset.pointsAudioResult='playing';}).catch(error=>{game.dataset.pointsAudioResult=error.name;console.warn('Não foi possível reproduzir o efeito de ganho:',error);});
 }
@@ -449,6 +453,7 @@ function playUiClick(){
   uiClickSound.gain.gain.cancelScheduledValues(time);
   uiClickSound.gain.gain.setValueAtTime(uiClickSound.level,time);
  }else uiClickSound.media.volume=uiClickSound.level;
+ if(playBufferedEffect(uiClickSound))return;
  uiClickSound.media.currentTime=0;
  void uiClickSound.media.play().catch(()=>{});
 }
@@ -465,6 +470,7 @@ const pageTurnSound=forestTracks[5];
 pageTurnSound.media.preload='auto';pageTurnSound.media.load();
 function playBookPageTurn(){
  if(!forestAudioStarted||!audioPreferences.sfx||document.hidden)return;
+ if(playBufferedEffect(pageTurnSound))return;
  pageTurnSound.media.currentTime=0;
  void pageTurnSound.media.play().catch(()=>{});
 }
@@ -485,7 +491,7 @@ function syncOpeningGrunt(){
  if(!forestAudioStarted||(forestAudioContext&&forestAudioContext.state!=='running'))return;
  if(openingGrunt.voice||(openingGruntStarted&&!openingGrunt.media.paused))return;
  openingGruntStarted=true;
- if(playIntroBuffer(openingGrunt,Math.max(0,elapsed))){entry.dataset.gruntPlayback='playing';return;}
+ if(playBufferedEffect(openingGrunt,Math.max(0,elapsed))){entry.dataset.gruntPlayback='playing';return;}
  openingGrunt.media.currentTime=Math.max(0,elapsed);
  if(openingGrunt.gain)openingGrunt.gain.gain.setValueAtTime(openingGrunt.level,forestAudioContext.currentTime);
  else openingGrunt.media.volume=openingGrunt.level;
@@ -507,7 +513,7 @@ function playLogoTear(){
   if(forestAudioContext.state!=='running')return;
   logoTear.gain.gain.setValueAtTime(logoTear.level,forestAudioContext.currentTime);
  }else logoTear.media.volume=logoTear.level;
- if(playIntroBuffer(logoTear)){entry.dataset.scratchPlayback='playing';return;}
+ if(playBufferedEffect(logoTear)){entry.dataset.scratchPlayback='playing';return;}
  void logoTear.media.play().catch(()=>{});
 }
 
@@ -532,6 +538,10 @@ function startForestAudio(){
  }
  if(audioChannelEnabled('sfx')||audioChannelEnabled('music'))void forestAudioContext?.resume().catch(()=>{});
  syncForestAudio();
+ // Unlock each ambient element during the gesture, including the game's normal track.
+ if(navigator.userActivation?.isActive)for(const track of forestTracks.filter(t=>t.loop)){
+  void track.media.play().then(()=>syncForestAudio()).catch(error=>{game.dataset.audioUnlockError=error.name;});
+ }
 }
 function syncForestAudio(fadeMusic=false){
  // DOM event listeners also call this function; only an explicit true requests a crossfade.
@@ -557,12 +567,13 @@ function syncForestAudio(fadeMusic=false){
    else gain.setTargetAtTime(level,time,.3);
   }else track.media.volume=level;
   if(fadingOut)track.pauseTimer=setTimeout(()=>track.media.pause(),850);
-  if(audible&&track.loop)void track.media.play().catch(()=>{});
+  if(audible&&track.loop)void track.media.play().catch(error=>{if(track.channel==='music')entry.dataset.musicPlayback=error.name;});
  }
 }
 function playWolfHowl(){
  if(!forestAudioStarted||!audioPreferences.sfx||document.hidden)return;
  const track=forestTracks[2];
+ if(playBufferedEffect(track))return;
  // Reuse one player: every Turbo activation starts one howl without stacking.
  track.media.pause();
  track.media.currentTime=0;void track.media.play().catch(()=>{});

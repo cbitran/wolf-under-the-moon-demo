@@ -500,7 +500,8 @@ body.opening-active{overflow:hidden}
 body:not(.opening-active){height:auto;min-height:100dvh;overflow-x:clip;overflow-y:auto;align-items:flex-start}
 body:not(.opening-active) .game{flex-shrink:0;width:min(100%,390px,max(280px,calc((100dvh - 250px) / 1.65)));height:auto;max-height:none;min-height:0;margin:0 auto}
 @media(max-width:760px){
- body:not(.opening-active) .game{width:min(100%,480px,max(280px,calc((100dvh - 210px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 1.65)));min-height:100dvh}
+ body:not(.opening-active){padding:0;display:block}
+ body:not(.opening-active) .game{width:100%;max-width:none;min-height:100dvh;border-radius:0}
 }
 
 /* Keep page navigation above the torn edge, with stronger ink for touch discovery. */
