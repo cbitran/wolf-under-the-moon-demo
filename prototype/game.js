@@ -17,8 +17,6 @@ function selectOpeningArt(){
 selectOpeningArt();
 morphWide.addEventListener('change',selectOpeningArt);
 
-let openingAudioUnlocked=false,releaseOpeningAudio;
-const openingAudioReady=new Promise(resolve=>{releaseOpeningAudio=resolve;});
 let openingMorphPlayback=Promise.resolve();
 let cancelOpeningMorph=null;
 function prepareOpeningMorph(){
@@ -50,7 +48,7 @@ function prepareOpeningMorph(){
    if(done)return;
    clearTimeout(timeout);
    if(visibleSince!==null){remaining-=performance.now()-visibleSince;visibleSince=null;}
-   if(document.hidden||!openingAudioUnlocked){openingMorph.pause();return;}
+   if(document.hidden){openingMorph.pause();return;}
    if(remaining<=0){fail();return;}
    visibleSince=performance.now();timeout=setTimeout(fail,remaining);
    openingMorph.play().catch(()=>{if(!document.hidden&&!done)fail();});
@@ -60,7 +58,6 @@ function prepareOpeningMorph(){
   openingMorph.addEventListener('ended',finish,{once:true});
   openingMorph.addEventListener('error',fail,{once:true});
   syncMorphVisibility();
-  void openingAudioReady.then(syncMorphVisibility);
  });
 }
 // Decode the actual art and human poster before displaying or starting the morph.
@@ -260,7 +257,6 @@ async function start(){
 }
 let openingScratch=null;
 async function scratchAfterMorph(){
- await openingAudioReady;
  await openingVisuals;
  // Resizing while loading may replace the video; await the current playback.
  let playback;
@@ -338,8 +334,8 @@ void start();
 
 // Independent music and sound-effect preferences.
 const audioPreferences={music:true,sfx:true};
-try{const saved=JSON.parse(localStorage.getItem('wolf-audio-preferences')||'null');for(const key of ['music','sfx'])if(typeof saved?.[key]==='boolean')audioPreferences[key]=saved[key];}catch{}
-// Intro audio is independent; saved preferences apply only after entering the game.
+// A fresh visit starts with both channels on; game toggles last for this visit only.
+// Intro always enables both channels; game-only preferences apply after Enter.
 function audioChannelEnabled(channel){return !entry.hidden||audioPreferences[channel];}
 // A real gesture unlocks sound when the browser requires it.
 const forestTracks=[
@@ -352,7 +348,7 @@ const forestTracks=[
  {src:'../assets/runtime/ui-click.mp3',level:.12,loop:false,channel:'sfx'},
  {src:'../assets/runtime/turbo-music-loop-v2.mp3',level:.14,loop:true,channel:'music',mode:'turbo'},
  {src:'../assets/runtime/collect-points.mp3',level:.32,loop:false,channel:'sfx'},
- {src:'../assets/runtime/opening-wolf-grunt-v1.mp3',level:.18,loop:false,channel:'sfx',introOnly:true}
+ {src:'../assets/runtime/opening-wolf-grunt-v1.mp3',level:.3,loop:false,channel:'sfx',introOnly:true}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
 forestTracks[7].media.addEventListener('playing',()=>{entry.dataset.musicPlayback='playing';});
@@ -434,13 +430,13 @@ function syncOpeningGrunt(){
  if(document.hidden||openingMorph.paused){openingGrunt.media.pause();return;}
  if(elapsed<0||openingGruntFinished||reduced.matches)return;
  // Browsers requiring a gesture must not replay this cue after the morph is over.
- if(!forestAudioStarted||forestAudioContext?.state!=='running')return;
+ if(!forestAudioStarted||(forestAudioContext&&forestAudioContext.state!=='running'))return;
  if(openingGruntStarted&&!openingGrunt.media.paused)return;
  openingGruntStarted=true;
  openingGrunt.media.currentTime=Math.max(0,elapsed);
  if(openingGrunt.gain)openingGrunt.gain.gain.setValueAtTime(openingGrunt.level,forestAudioContext.currentTime);
  else openingGrunt.media.volume=openingGrunt.level;
- void openingGrunt.media.play().catch(()=>{openingGruntFinished=true;});
+ void openingGrunt.media.play().then(()=>{entry.dataset.gruntPlayback='playing';}).catch(error=>{entry.dataset.gruntPlayback=error.name;openingGruntStarted=false;});
 }
 openingMorph.addEventListener('timeupdate',syncOpeningGrunt);
 openingMorph.addEventListener('playing',syncOpeningGrunt);
@@ -468,7 +464,10 @@ function startForestAudio(){
   const Context=window.AudioContext||window.webkitAudioContext;
   if(Context){
    forestAudioContext=new Context();
-   forestAudioContext.addEventListener('statechange',()=>{entry.dataset.audioContext=forestAudioContext.state;});
+   forestAudioContext.addEventListener('statechange',()=>{
+    entry.dataset.audioContext=forestAudioContext.state;
+    if(forestAudioContext.state==='running'){syncForestAudio();syncOpeningGrunt();}
+   });
    prepareCardLanding(forestAudioContext);
    for(const track of forestTracks){
     track.gain=forestAudioContext.createGain();track.gain.gain.value=0;
@@ -533,23 +532,19 @@ function refreshAudioPreferences(){
 for(const key of ['music','sfx'])$(key+'-toggle').onclick=()=>{
  audioPreferences[key]=!audioPreferences[key];
  if(audioPreferences[key])startForestAudio();
- try{localStorage.setItem('wolf-audio-preferences',JSON.stringify(audioPreferences));}catch{}
  refreshAudioPreferences();
 };
 refreshAudioPreferences();
 // Opening soundtrack runs alongside loading; playback policy may require a real gesture.
 function unlockOpeningAudio(event){
- if(!event.isTrusted||entry.hidden)return;
- // Run resume and media.play directly inside the trusted click/touch gesture.
+ if(!event.isTrusted)return;
+ // Retry silently on ordinary interaction; never block the intro behind a prompt.
  startForestAudio();
- if(openingAudioUnlocked)return;
- openingAudioUnlocked=true;
- $('opening-audio-start').hidden=true;
- releaseOpeningAudio();
+ if(!entry.hidden)syncOpeningGrunt();
 }
-$('opening-audio-start').addEventListener('click',unlockOpeningAudio);
-// No automatic soundtrack attempt: mobile browsers would reject it silently.
-
+document.addEventListener('pointerup',unlockOpeningAudio,{passive:true});
+document.addEventListener('keydown',unlockOpeningAudio);
+startForestAudio();
 const gameMenu=$('game-menu');
 const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname)||location.protocol==='file:';
 const inviteURL=new URL(location.href);inviteURL.search='';inviteURL.hash='';

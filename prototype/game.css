@@ -513,11 +513,6 @@ body:not(.opening-active) .game{flex-shrink:0;width:min(100%,390px,max(280px,cal
 /* Only replace the baked lettering while loading; no frame or raised button skin. */
 .entry .entry-composition #enter:disabled{background:#302218 url('../assets/runtime/button-wood-v2.webp') center 48%/auto 650% no-repeat;color:#d7c9aa;text-shadow:0 1px 2px #000;filter:none;border:0;box-shadow:none;opacity:1}
 
-/* A trusted tap starts audio and the introduction together on mobile browsers. */
-.opening-audio-start{position:absolute;inset:0;z-index:10;width:100%;height:100%;border:0;padding:0;background:#03080c33;color:#f0e4c9;display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
-.opening-audio-start span{margin:0 16px max(22px,env(safe-area-inset-bottom));padding:12px 20px;border:1px solid #a38b6266;border-radius:4px;background:#071015ed;font:600 16px Georgia,serif;box-shadow:0 3px 16px #0008}
-.opening-audio-start[hidden]{display:none!important}
-
 /* Faint field sketches remain behind the editable book contents. */
 #game-menu.book-menu::before{content:'';position:absolute;inset:13% 9% 20% 22%;background:url('../assets/runtime/book-hunter-sketches-v1.webp') center/100% 100% no-repeat;opacity:.32;mix-blend-mode:multiply;pointer-events:none}
 #game-menu .book-content{z-index:1}
