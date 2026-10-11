@@ -174,7 +174,7 @@ async function play(){
    {transform:'translateY(-120%) rotate(-5deg)',opacity:0,offset:0},
    {transform:'translateY(-35%) rotate(-2deg)',opacity:1,offset:.55},
    {transform:'translateY(0) rotate(0)',opacity:1,offset:1}
-  ],{duration:(380+Math.random()*150)*speed,delay:((index%4)*65+Math.floor(index/4)*42+Math.random()*70)*speed,easing:'cubic-bezier(.25,.65,.3,1)',fill:'both'}).then(()=>playCardLanding(turbo?1.9:1.4))));
+  ],{duration:(380+Math.random()*150)*speed,delay:((index%4)*65+Math.floor(index/4)*42+Math.random()*70)*speed,easing:'cubic-bezier(.25,.65,.3,1)',fill:'both'}).then(()=>playCardLanding())));
   round++;$('round').textContent=round;
   let roundPoints=0,chain=0;
   let outcome=evaluateGrid(grid);
@@ -203,7 +203,7 @@ async function play(){
       {transform:`translateY(${-distance*step}px)`,opacity:fresh?0:1},
       {transform:`translateY(${-distance*step*.72}px)`,opacity:1,offset:.28},
       {transform:'translateY(0)',opacity:1}
-     ],{duration:(310+distance*65+Math.random()*100)*speed,delay:((index%4)*33+Math.random()*90)*speed,easing:'cubic-bezier(.4,0,.65,1)',fill:'both'}).then(()=>playCardLanding(turbo?1.9:1.4));
+     ],{duration:(310+distance*65+Math.random()*100)*speed,delay:((index%4)*33+Math.random()*90)*speed,easing:'cubic-bezier(.4,0,.65,1)',fill:'both'}).then(()=>playCardLanding());
     }));
    }finally{board.classList.remove('cascading');}
    outcome=evaluateGrid(grid);
@@ -311,7 +311,7 @@ async function openGame(){
      {transform:`translateY(${-distance*.78}px)`,opacity:1,offset:.2},
      {transform:'translateY(0)',opacity:1}
     ],{duration:125+row*15,easing:'cubic-bezier(.35,0,.55,1)',fill:'both'});
-    playCardLanding(1.6);
+    playCardLanding();
    }
   }
  }finally{
@@ -368,10 +368,11 @@ function stopCardLandings(){
  for(const voice of cardLandingVoices)voice.stop();
  cardLandingVoices.clear();
 }
-function playCardLanding(rate=1.4){
+function playCardLanding(){
  if(!audioPreferences.sfx||document.hidden||!cardLandingBuffer||forestAudioContext?.state!=='running')return;
  const voice=forestAudioContext.createBufferSource();voice.buffer=cardLandingBuffer;
- voice.playbackRate.value=rate;voice.connect(cardLandingBus);cardLandingVoices.add(voice);
+ // Keep the normal-mode timbre; Turbo changes landing timing, not audio pitch.
+ voice.playbackRate.value=1.4;voice.connect(cardLandingBus);cardLandingVoices.add(voice);
  voice.onended=()=>{voice.disconnect();cardLandingVoices.delete(voice);};voice.start();
 }
 const pointsSound=forestTracks[8];
