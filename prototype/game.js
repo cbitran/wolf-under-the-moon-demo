@@ -88,6 +88,7 @@ async function showRoundReaction(won){
 turboButton.onclick=()=>{
  if(busy)return;
  turbo=!turbo;
+ syncForestAudio(true);
  turboButton.setAttribute('aria-pressed',String(turbo));
  game.classList.toggle('turbo-active',turbo);
  restoreWolfPose();
@@ -308,10 +309,11 @@ const forestTracks=[
  {src:'../assets/runtime/forest-wind.mp3',level:.12,loop:true,channel:'sfx'},
  {src:'../assets/runtime/forest-searchers.mp3',level:.035,loop:true,channel:'sfx'},
  {src:'../assets/runtime/wolf-howl.mp3',level:.18,loop:false,channel:'sfx'},
- {src:'../assets/runtime/forest-music.mp3',level:.14,loop:true,channel:'music'},
+ {src:'../assets/runtime/forest-music.mp3',level:.14,loop:true,channel:'music',mode:'normal'},
  {src:'../assets/runtime/logo-claw-tear.mp3',level:.22,loop:false,channel:'sfx'},
  {src:'../assets/runtime/book-page-turn.mp3',level:.12,loop:false,channel:'sfx'},
- {src:'../assets/runtime/ui-click.mp3',level:.12,loop:false,channel:'sfx'}
+ {src:'../assets/runtime/ui-click.mp3',level:.12,loop:false,channel:'sfx'},
+ {src:'../assets/runtime/turbo-music.mp3',level:.14,loop:true,channel:'music',mode:'turbo'}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
 const uiClickSound=forestTracks[6];
@@ -374,16 +376,26 @@ function startForestAudio(){
  if(audioPreferences.sfx||audioPreferences.music)void forestAudioContext?.resume().catch(()=>{});
  syncForestAudio();
 }
-function syncForestAudio(){
+function syncForestAudio(fadeMusic=false){
+ // DOM event listeners also call this function; only an explicit true requests a crossfade.
+ const crossfade=fadeMusic===true;
  for(const track of forestTracks){
-  const audible=forestAudioStarted&&audioPreferences[track.channel]&&!document.hidden;
-  if(!audible){track.media.pause();if(!track.loop)track.media.currentTime=0;}
+  clearTimeout(track.pauseTimer);
+  const enabled=forestAudioStarted&&audioPreferences[track.channel]&&!document.hidden;
+  const selected=track.channel!=='music'||track.mode===(turbo?'turbo':'normal');
+  const audible=enabled&&selected;
+  const fadingOut=crossfade&&enabled&&!selected&&track.gain&&!track.media.paused;
+  if(!audible&&!fadingOut){track.media.pause();if(!track.loop)track.media.currentTime=0;}
   const level=audible?track.level:0;
   if(track.gain){
    const time=forestAudioContext.currentTime;
-   track.gain.gain.cancelScheduledValues(time);
-   track.gain.gain.setTargetAtTime(level,time,.3);
+   const gain=track.gain.gain;
+   if(typeof gain.cancelAndHoldAtTime==='function')gain.cancelAndHoldAtTime(time);
+   else{const current=gain.value;gain.cancelScheduledValues(time);gain.setValueAtTime(current,time);}
+   if(crossfade&&track.channel==='music'&&enabled)gain.linearRampToValueAtTime(level,time+.8);
+   else gain.setTargetAtTime(level,time,.3);
   }else track.media.volume=level;
+  if(fadingOut)track.pauseTimer=setTimeout(()=>track.media.pause(),850);
   if(audible&&track.loop)void track.media.play().catch(()=>{});
  }
 }
