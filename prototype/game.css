@@ -543,3 +543,38 @@ body:not(.opening-active) .game{flex-shrink:0;width:min(100%,390px);height:auto;
 .game .spin-controls #spin,
 .game .spin-controls #turbo{font-family:var(--action-label-font);font-size:var(--action-label-size);font-weight:700;line-height:1;letter-spacing:.6px}
 #game-menu .setting-toggle,#game-menu #menu-rules,#game-menu #invite-copy{font-family:var(--action-label-font);font-size:14px;line-height:1.35}
+
+/* Fit the viewport by giving spare height to the horizon, not to document scroll. */
+body:not(.opening-active){height:100dvh;min-height:0;overflow:hidden;padding-top:0;padding-bottom:0}
+body:not(.opening-active) .game{height:100dvh;min-height:0;max-height:100dvh;display:flex;flex-direction:column;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:max(6px,env(safe-area-inset-bottom))}
+.game header{flex:none;position:relative;z-index:5}
+.game .character-stage{flex:1 1 0;min-height:0;aspect-ratio:auto;height:auto;margin-top:-12px}
+.game .play-area{flex:none;min-width:0}
+.game .spin-controls{margin-top:4px}
+.game .play-area .scorebar{margin:2px 4px 0}
+.game .spin-mount .iron-hanger,.game .turbo-mount .iron-hanger{top:-12px;height:29px}
+@media(max-height:440px) and (min-aspect-ratio:1/1){
+ body:not(.opening-active) .game{width:100%;max-width:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:48px minmax(0,1fr);gap:0 12px;border:0;border-radius:0}
+ .game header{grid-column:1;grid-row:1;justify-content:flex-start;gap:8px}
+ .game .character-stage{grid-column:1;grid-row:2;height:100%;width:auto;margin:0;top:0}
+ .game .play-area{grid-column:2;grid-row:1 / 3;width:min(100%,calc(100dvh - 130px));justify-self:center;align-self:end}
+ .game .board-frame{border-width:14px;border-image-width:14px;margin-top:0}
+ .game .grid-crest{width:100px;top:-34px}
+ .game .grid-crest .identity{width:100px;height:64px;top:-12px}
+ .game .spin-controls{gap:4px;margin:4px 0 0;grid-template-columns:minmax(0,1fr) 64px}
+ .game .spin-mount,.game .turbo-mount,.game .spin-controls #spin,.game .spin-controls #turbo{height:44px;min-height:44px}
+ .game .play-area .scorebar strong{font-size:18px;line-height:20px;margin-top:0}
+ .game .play-area .scorebar span{font-size:9px;letter-spacing:0}
+}
+/* Preserve readable settings when the book is constrained by viewport height. */
+@media(max-height:600px){
+ #game-menu h2{font-size:16px;line-height:1.15;margin-bottom:6px}
+ #game-menu [data-book-page="0"] h3{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0}
+ #game-menu #menu-rules{display:none}
+ #game-menu .book-navigation{margin-top:3px;padding-top:2px}
+ #game-menu .book-scroll-hint{height:16px;min-height:16px;font-size:10px;line-height:16px;margin-top:0}
+ #game-menu .book-page{padding-right:9px}
+}
+
+/* Background, eclipse and lantern overlays share the same top registration. */
+.scene-backdrop{background-position:center top}
