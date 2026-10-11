@@ -361,11 +361,19 @@ const forestTracks=[
  {src:'../assets/runtime/wolf-grunt-loop-v1.mp3',level:.12,loop:true,bufferLoop:true,channel:'sfx'}
 ].map(config=>{const media=new Audio(config.src);media.loop=config.loop;media.preload='none';media.volume=0;return {...config,media,gain:null};});
 let forestAudioStarted=false,forestAudioContext;
-const introEffectBytes=Promise.all([2,4,5,6,8,9,10].map(async index=>{
- const response=await fetch(forestTracks[index].src);
- if(!response.ok)throw new Error('Efeito da introdução indisponível');
- return {index,bytes:await response.arrayBuffer()};
-})).catch(error=>{console.warn(error);return [];});
+const introEffectBytes=Promise.allSettled([2,4,5,6,8,9,10].map(async index=>{
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),10000);
+ try{
+  const response=await fetch(forestTracks[index].src,{signal:controller.signal});
+  if(!response.ok)throw new Error('Efeito da introdução indisponível');
+  return {index,bytes:await response.arrayBuffer()};
+ }finally{clearTimeout(timeout);}
+})).then(results=>{
+ const failures=results.filter(item=>item.status==='rejected');
+ if(failures.length)entry.dataset.audioAssetFailures=String(failures.length);
+ return results.filter(item=>item.status==='fulfilled').map(item=>item.value);
+});
 let introEffectsReady=Promise.resolve();
 let introBeginning=false;
 async function beginIntroduction(){
