@@ -169,12 +169,13 @@ async function play(){
   const speed=turbo?.45:1;
   let grid=createGrid();
   draw(grid);
+  playCardLanding({grouped:true});
   // Every symbol lands at its exact resting transform; no second settle animation.
   await Promise.all([...board.children].map((cell,index)=>animate(cell.firstElementChild,[
    {transform:'translateY(-120%) rotate(-5deg)',opacity:0,offset:0},
    {transform:'translateY(-35%) rotate(-2deg)',opacity:1,offset:.55},
    {transform:'translateY(0) rotate(0)',opacity:1,offset:1}
-  ],{duration:(380+Math.random()*150)*speed,delay:((index%4)*65+Math.floor(index/4)*42+Math.random()*70)*speed,easing:'cubic-bezier(.25,.65,.3,1)',fill:'both'}).then(()=>playCardLanding())));
+  ],{duration:(380+Math.random()*150)*speed,delay:((index%4)*65+Math.floor(index/4)*42+Math.random()*70)*speed,easing:'cubic-bezier(.25,.65,.3,1)',fill:'both'})));
   round++;$('round').textContent=round;
   let roundPoints=0,chain=0;
   let outcome=evaluateGrid(grid);
@@ -194,6 +195,7 @@ async function play(){
    grid=collapsed.grid;
    const step=board.children[4].offsetTop-board.children[0].offsetTop;
    draw(grid);board.classList.add('cascading');game.dataset.phase='cascading';
+   playCardLanding({grouped:true});
    try{
     await Promise.all([...board.children].map((cell,index)=>{
      const row=Math.floor(index/4),origin=collapsed.origins[index],distance=row-origin;
@@ -203,7 +205,7 @@ async function play(){
       {transform:`translateY(${-distance*step}px)`,opacity:fresh?0:1},
       {transform:`translateY(${-distance*step*.72}px)`,opacity:1,offset:.28},
       {transform:'translateY(0)',opacity:1}
-     ],{duration:(310+distance*65+Math.random()*100)*speed,delay:((index%4)*33+Math.random()*90)*speed,easing:'cubic-bezier(.4,0,.65,1)',fill:'both'}).then(()=>playCardLanding());
+     ],{duration:(310+distance*65+Math.random()*100)*speed,delay:((index%4)*33+Math.random()*90)*speed,easing:'cubic-bezier(.4,0,.65,1)',fill:'both'});
     }));
    }finally{board.classList.remove('cascading');}
    outcome=evaluateGrid(grid);
@@ -355,6 +357,7 @@ forestTracks[7].media.addEventListener('playing',()=>{entry.dataset.musicPlaybac
 let rewardMusicLevel=1,rewardMusicTimer;
 let cardLandingBuffer=null,cardLandingBus=null;
 const cardLandingVoices=new Set();
+let cardMovement=null;
 const cardLandingBytes=fetch('../assets/runtime/card-landing.mp3').then(response=>{
  if(!response.ok)throw new Error('Efeito de queda indisponível');
  return response.arrayBuffer();
@@ -367,14 +370,24 @@ function prepareCardLanding(context){
 }
 function stopCardLandings(){
  for(const voice of cardLandingVoices)voice.stop();
- cardLandingVoices.clear();
+ cardLandingVoices.clear();cardMovement=null;
 }
-function playCardLanding(){
+function playCardLanding({grouped=false}={}){
  if(!audioPreferences.sfx||document.hidden||!cardLandingBuffer||forestAudioContext?.state!=='running')return;
+ const now=forestAudioContext.currentTime;
+ if(grouped&&cardMovement){
+  // Retire the previous movement gently; repeated spins never accumulate tails.
+  const old=cardMovement;old.gain.gain.cancelScheduledValues(now);
+  old.gain.gain.setValueAtTime(old.gain.gain.value,now);
+  old.gain.gain.linearRampToValueAtTime(0,now+.02);old.voice.stop(now+.025);
+ }
  const voice=forestAudioContext.createBufferSource();voice.buffer=cardLandingBuffer;
- // Keep the normal-mode timbre; Turbo changes landing timing, not audio pitch.
- voice.playbackRate.value=1.4;voice.connect(cardLandingBus);cardLandingVoices.add(voice);
- voice.onended=()=>{voice.disconnect();cardLandingVoices.delete(voice);};voice.start();
+ const gain=forestAudioContext.createGain();gain.gain.value=1;
+ // Same timbre in normal and Turbo; one movement cue per whole falling group.
+ voice.playbackRate.value=1.4;voice.connect(gain).connect(cardLandingBus);cardLandingVoices.add(voice);
+ const movement={voice,gain};if(grouped)cardMovement=movement;
+ voice.onended=()=>{voice.disconnect();gain.disconnect();cardLandingVoices.delete(voice);if(cardMovement===movement)cardMovement=null;};
+ voice.start();
 }
 const pointsSound=forestTracks[8];
 pointsSound.media.preload='auto';pointsSound.media.load();
