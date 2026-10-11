@@ -452,7 +452,7 @@
 .fog{transition:opacity 3.2s cubic-bezier(.45,0,.55,1)}
 @media(prefers-reduced-motion:reduce){.character-stage .wolf-reference,.raven-perch img,.searchlight,.fog{transition:none}}
 
-#opening-morph-still img{display:block;width:100%;height:100%;object-fit:fill}
+#opening-morph-still img,#opening-morph-poster img{display:block;width:100%;height:100%;object-fit:fill}
 
 /* Two light mist banks drift only through the background, excluding the foreground group. */
 .opening-fog{position:absolute;inset:0;pointer-events:none;overflow:hidden;mask:url('../assets/runtime/opening-fog-mask-standard.svg') center/100% 100% no-repeat}
@@ -595,7 +595,7 @@ body:not(.opening-active) .game{height:var(--game-viewport-height,100svh);min-he
 .game header{justify-content:flex-start;gap:8px}
 .game .character-stage .wolf-reference,
 .game .character-stage canvas.wolf-motion,
-.game .character-stage .wolf-motion-poster{height:min(82%,250px);width:auto;max-width:64%;left:0;object-fit:contain}
+.game .character-stage .wolf-motion-poster{height:min(96%,300px);width:auto;max-width:76%;left:6%;object-fit:contain}
 .game .scene-backdrop{inset:auto 0 -60px;width:100%;height:auto;aspect-ratio:1040 / 1513;background-size:100% 100%;background-position:center}
 
 /* The longer retry label widens the same plank, centered, instead of overflowing it. */

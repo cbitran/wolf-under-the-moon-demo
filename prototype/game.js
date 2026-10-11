@@ -7,6 +7,14 @@ const game=$('game'), board=$('board'), spin=$('spin'), result=$('result');
 const entry=$('entry'), enter=$('enter'), entryStatus=$('entry-status');
 let entering=false;
 const openingMorph=$('opening-morph');
+// iOS drops the video poster on play() before the first frame exists; this copy covers that gap.
+const morphPoster=$('opening-morph-poster');
+openingMorph.addEventListener('playing',()=>{
+ if(morphPoster.hidden)return;
+ const hide=()=>{morphPoster.hidden=true;};
+ if(openingMorph.requestVideoFrameCallback)openingMorph.requestVideoFrameCallback(hide);
+ else requestAnimationFrame(()=>requestAnimationFrame(hide));
+});
 const morphWide=matchMedia('(min-aspect-ratio:16/9)');
 function selectOpeningArt(){
  for(const [selector,active] of [['.standard-letter-layer',!morphWide.matches],['.ultra-letter-layer',morphWide.matches]]){
@@ -30,6 +38,7 @@ function prepareOpeningMorph(){
  openingMorph.pause();
  const minimal=matchMedia('(prefers-reduced-motion: reduce)').matches||navigator.connection?.saveData;
  openingMorph.hidden=Boolean(minimal);
+ if(minimal)morphPoster.hidden=true;
  if(minimal){openingMorph.removeAttribute('src');openingMorph.load();openingMorphPlayback=Promise.resolve();return;}
  const variant=morphWide.matches?'ultra':'standard';
  openingMorph.poster=`../assets/runtime/opening-seedance-head-${variant}-poster-v2.webp`;
