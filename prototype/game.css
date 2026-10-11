@@ -456,3 +456,12 @@
 @media(prefers-reduced-motion:reduce){.character-stage .wolf-reference,.raven-perch img,.searchlight,.fog{transition:none}}
 
 #opening-morph-still img{display:block;width:100%;height:100%;object-fit:fill}
+
+/* Two light mist banks drift only through the background, excluding the foreground group. */
+.opening-fog{position:absolute;inset:0;pointer-events:none;overflow:hidden;mask:url('../assets/runtime/opening-fog-mask-standard.svg') center/100% 100% no-repeat}
+.opening-fog i{position:absolute;inset:-10% -30%;background:radial-gradient(ellipse at 25% 47%,#c5d6dc33,transparent 35%),radial-gradient(ellipse at 65% 31%,#acc8d326,transparent 29%),radial-gradient(ellipse at 45% 78%,#c1d2d42b,transparent 38%);animation:opening-mist-drift 24s ease-in-out infinite alternate}
+.opening-fog i+i{opacity:.65;animation-duration:37s;animation-delay:-18s;animation-direction:alternate-reverse;background:radial-gradient(ellipse at 42% 20%,#c4d7df2b,transparent 32%),radial-gradient(ellipse at 72% 65%,#b4cbd838,transparent 36%)}
+@keyframes opening-mist-drift{0%{transform:translate(-8%,2%);opacity:.55}45%{opacity:.9}100%{transform:translate(8%,-3%);opacity:.65}}
+.entry.paused .opening-fog i{animation-play-state:paused}
+@media(min-aspect-ratio:16/9){.opening-fog{mask-image:url('../assets/runtime/opening-fog-mask-ultra.svg')}}
+@media(prefers-reduced-motion:reduce){.opening-fog i{animation:none;opacity:.45}}

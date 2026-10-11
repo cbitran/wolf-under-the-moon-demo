@@ -78,7 +78,6 @@ async function showRoundReaction(won){
  const reaction=++wolfReaction;
  game.dataset.wolfState=won?'rage':'howl';
  wolf.src=won?wolfRage:wolfHowl;
- if(!won)playWolfHowl();
  wolf.alt=won?'Lobisomem enfurecido com o ganho do jogador.':'Lobisomem em pose de uivo de triunfo após rodada sem ganho.';
  // Static poses provide the result mapping until approved motion clips exist.
  await animate(wolf,[{opacity:1},{opacity:1}],{duration:1800},{keepDuration:true});
@@ -92,6 +91,8 @@ turboButton.onclick=()=>{
  turboButton.setAttribute('aria-pressed',String(turbo));
  game.classList.toggle('turbo-active',turbo);
  restoreWolfPose();
+ if(turbo)playWolfHowl();
+ else{forestTracks[2].media.pause();forestTracks[2].media.currentTime=0;}
  // Brief opacity easing softens the still-pose swap without stretching either axis.
  for(const motion of wolf.getAnimations())motion.cancel();
  void animate(wolf,[{opacity:.65},{opacity:1}],{duration:180,easing:'ease-out'});
@@ -405,8 +406,8 @@ function syncForestAudio(fadeMusic=false){
 function playWolfHowl(){
  if(!forestAudioStarted||!audioPreferences.sfx||document.hidden)return;
  const track=forestTracks[2];
- // Let an existing howl finish; turbo must never stack copies of the sound.
- if(!track.media.paused)return;
+ // Reuse one player: every Turbo activation starts one howl without stacking.
+ track.media.pause();
  track.media.currentTime=0;void track.media.play().catch(()=>{});
 }
 document.addEventListener('visibilitychange',syncForestAudio);
