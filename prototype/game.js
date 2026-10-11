@@ -579,6 +579,8 @@ const bookScrollObserver=new ResizeObserver(updateBookScroll);
 for(const page of bookPages)bookScrollObserver.observe(page);
 
 function renderBookPage(){
+ $('menu-rules').hidden=bookPage!==0;
+ $('book-scroll-hint').hidden=bookPage===0;
  bookPages.forEach((page,index)=>{page.hidden=index!==bookPage;if(index===bookPage)page.scrollTop=0;});
  $('book-page-number').textContent=`${bookPage+1} / ${bookPages.length}`;
  $('book-prev').disabled=bookPage===0;$('book-next').disabled=bookPage===bookPages.length-1;
