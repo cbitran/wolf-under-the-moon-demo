@@ -302,7 +302,7 @@ async function openGame(){
  // Keep the status readable for three visible seconds, including reduced-motion mode.
  await animate(enter,[{opacity:1},{opacity:1}],{duration:3000},{keepDuration:true});
  await animate(entry,[{opacity:1},{opacity:0}],{duration:350,easing:'ease-out',fill:'forwards'});
- entry.hidden=true;openingMorph.pause();game.hidden=false;game.inert=false;document.body.classList.remove('opening-active');
+ syncGameViewport();entry.hidden=true;openingMorph.pause();game.hidden=false;game.inert=false;document.body.classList.remove('opening-active');
  syncForestAudio(true);
  game.dataset.phase='entering';result.textContent='Os símbolos estão entrando no tabuleiro.';
  const step=board.children[4].offsetTop-board.children[0].offsetTop;
@@ -701,6 +701,19 @@ $('invite-copy').onclick=async()=>{
  try{await navigator.clipboard.writeText($('invite-link').value);$('invite-status').textContent='Link copiado! Envie para seu amigo.';}
  catch{$('invite-link').focus();$('invite-link').select();$('invite-status').textContent='Selecione e copie o link acima.';}
 };
+
+// Browser toolbars can reduce the visible viewport independently of CSS viewport units.
+// Keep the game inside that visible area; do not resize the layout during pinch zoom.
+function syncGameViewport(){
+ const viewport=window.visualViewport;
+ if(viewport&&Math.abs(viewport.scale-1)>.01)return;
+ const height=Math.floor(Math.min(window.innerHeight,viewport?.height||window.innerHeight));
+ document.documentElement.style.setProperty('--game-viewport-height',`${height}px`);
+}
+syncGameViewport();
+window.addEventListener('resize',syncGameViewport);
+window.addEventListener('pageshow',syncGameViewport);
+window.visualViewport?.addEventListener('resize',syncGameViewport);
 
 // Native modal accessibility, positioned inside the mobile game rather than the desktop.
 function positionGameDialog(dialog){
