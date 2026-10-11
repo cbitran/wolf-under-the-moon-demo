@@ -530,3 +530,13 @@ body:not(.opening-active) .game{flex-shrink:0;width:min(100%,390px,max(280px,cal
 .book-motion{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .book-motion[hidden]{display:none!important}
 #game-menu.book-film .dialog-close{z-index:4}
+
+/* Compact mobile composition: adjacent controls, full-width board and less dead space. */
+@media(max-width:760px){
+ .game header{justify-content:flex-start;gap:8px}
+ body:not(.opening-active) .game{min-height:0;padding-bottom:max(6px,env(safe-area-inset-bottom))}
+ .game .character-stage{aspect-ratio:390 / 250;margin-top:-12px}
+ .game .spin-controls{margin-top:4px}
+ .game .spin-mount .iron-hanger,.game .turbo-mount .iron-hanger{top:-12px;height:29px}
+ .game .play-area .scorebar{margin:2px 4px 0}
+}
